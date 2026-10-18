@@ -208,17 +208,18 @@ const SYNTH = {
   duck(t, k = 1) { [0, .24].forEach(o => { osc({ f: 520, to: 380, t: t + o, d: .17, v: .1, type: 'square', lp: 1500, a: .01, hold: 1, vib: { f: 30, depth: 20 } }); noise({ t: t + o, d: .15, v: .05, ft: 'lowpass', f: 1200 }); }); },
   horse(t, k = 1) { const d = .7 * k; osc({ f: 1150, to: 480, t, d, v: .09, type: 'sawtooth', lp: 3200, a: .02, hold: 1, vib: { f: 14, depth: 60 } }); osc({ f: 575, to: 240, t, d, v: .04, type: 'square', lp: 1600, a: .02, hold: 1, vib: { f: 14, depth: 30 } }); noise({ t: t + d, d: .15, v: .08, ft: 'lowpass', f: 500 }); },
 };
+// Rick picked these by ear on 2026-10-18 (Farm Sound Check page).
 const SAMPLE_FILES = {
-  pig: ['../barnyard-race/sounds/pig-oink.mp3', '../barnyard-race/sounds/pig-2.mp3', '../barnyard-race/sounds/pig-3.mp3', '../barnyard-race/sounds/pig-4.mp3'],
-  cow: ['../barnyard-race/sounds/cow-moo.mp3', '../barnyard-race/sounds/cow-2.mp3', '../barnyard-race/sounds/cow-3.mp3', '../barnyard-race/sounds/cow-4.mp3'],
-  sheep: ['../barnyard-race/sounds/sheep-baa.mp3', '../barnyard-race/sounds/sheep-2.mp3', '../barnyard-race/sounds/sheep-3.mp3'],
-  lamb: ['../barnyard-race/sounds/lamb-1.mp3', '../barnyard-race/sounds/lamb-2.mp3'],
-  chicken: ['../barnyard-race/sounds/chicken-cluck.mp3', '../barnyard-race/sounds/chicken-2.mp3'],
-  rooster: ['../barnyard-race/sounds/rooster-1.mp3'],
-  horse: ['../barnyard-race/sounds/horse-1.mp3', '../barnyard-race/sounds/horse-2.mp3', '../barnyard-race/sounds/horse-3.mp3'],
-  goat: ['../barnyard-race/sounds/goat-1.mp3', '../barnyard-race/sounds/goat-2.mp3', '../barnyard-race/sounds/kid-1.mp3'],
-  duck: ['../barnyard-race/sounds/duck-1.mp3', '../barnyard-race/sounds/duck-2.mp3', '../barnyard-race/sounds/duck-3.mp3', '../barnyard-race/sounds/duck-4.mp3'],
-  frog: ['../barnyard-race/sounds/frog-1.mp3', '../barnyard-race/sounds/frog-2.mp3', '../barnyard-race/sounds/frog-3.mp3', '../barnyard-race/sounds/frog-4.mp3'],
+  pig: ['../barnyard-race/sounds/pig-oink.mp3', '../barnyard-race/sounds/pig_fs1.mp3', '../barnyard-race/sounds/pig_fs2.mp3', '../barnyard-race/sounds/pig_fs4.mp3'],
+  cow: ['../barnyard-race/sounds/cow-moo.mp3', '../barnyard-race/sounds/cow_fs2.mp3', '../barnyard-race/sounds/cow_fs5.mp3', '../barnyard-race/sounds/cow_fs7.mp3', '../barnyard-race/sounds/cow_fs8.mp3', '../barnyard-race/sounds/cow_fs9.mp3'],
+  sheep: ['../barnyard-race/sounds/sheep-baa.mp3', '../barnyard-race/sounds/sheep_fs1.mp3', '../barnyard-race/sounds/sheep_fs2.mp3', '../barnyard-race/sounds/sheep_fs4.mp3', '../barnyard-race/sounds/sheep_fs5.mp3'],
+  lamb: ['../barnyard-race/sounds/sheep_fs7.mp3', '../barnyard-race/sounds/sheep_fs8.mp3'],
+  chicken: ['../barnyard-race/sounds/chicken_fs1.mp3', '../barnyard-race/sounds/chicken_fs3.mp3', '../barnyard-race/sounds/chicken_fs5.mp3', '../barnyard-race/sounds/hen-pd1.mp3', '../barnyard-race/sounds/hen-pd2.mp3'],
+  rooster: ['../barnyard-race/sounds/rooster-pd1.mp3', '../barnyard-race/sounds/rooster-bsb1.mp3', '../barnyard-race/sounds/rooster-bsb2.mp3', '../barnyard-race/sounds/rooster-bsb3.mp3'],
+  horse: ['../barnyard-race/sounds/horse_fs2.mp3', '../barnyard-race/sounds/horse_fs3.mp3', '../barnyard-race/sounds/horse_fs4.mp3', '../barnyard-race/sounds/horse_fs5.mp3', '../barnyard-race/sounds/horse_fs6.mp3', '../barnyard-race/sounds/horse_fs8.mp3', '../barnyard-race/sounds/horse_fs9.mp3'],
+  goat: ['../barnyard-race/sounds/goat_fs1.mp3', '../barnyard-race/sounds/goat_fs2.mp3', '../barnyard-race/sounds/goat_fs3.mp3', '../barnyard-race/sounds/goat_fs4.mp3', '../barnyard-race/sounds/goat_fs5.mp3', '../barnyard-race/sounds/goat_fs6.mp3'],
+  duck: ['../barnyard-race/sounds/duck_fs4.mp3', '../barnyard-race/sounds/duck_fs5.mp3', '../barnyard-race/sounds/duck_fs6.mp3', '../barnyard-race/sounds/duck_fs7.mp3', '../barnyard-race/sounds/duck_fs9.mp3'],
+  frog: ['../barnyard-race/sounds/frog_fs1.mp3', '../barnyard-race/sounds/frog_fs5.mp3'],
 };
 const SAMPLE_VOL = { pig: 1.1, cow: 0.9, sheep: 0.9, chicken: 0.8, rooster: 0.8 };
 const FALLBACK = { lamb: 'sheep' };
@@ -629,7 +630,7 @@ const BARN = { x: -14, z: -16 }, DOOR = { x: -14, z: -10.1 }, POND = { x: 22, z:
 const SLOT_X = i => -12 + i * 3.1, TROUGH_Z = -2, FEED_Z = -4.6, FACE_CAM = -Math.PI / 2;
 const faceDir = (dx, dz) => Math.atan2(-dz, dx);
 const turnAngle = (from, to, k) => { const d = ((to - from + Math.PI) % TAU + TAU) % TAU - Math.PI; return from + d * Math.min(1, k); };
-const WORDS = { pig: 'Oink!', cow: 'Moo!', sheep: 'Baa!', chicken: 'Bawk!', horse: 'Neigh!', goat: 'Meh-eh!', duck: 'Quack!', frog: 'Ribbit!', chick: 'Peep!', farmer: 'Hello!' };
+const WORDS = { rooster: 'Cock-a-doodle-doo!', pig: 'Oink!', cow: 'Moo!', sheep: 'Baa!', chicken: 'Bawk!', horse: 'Neigh!', goat: 'Meh-eh!', duck: 'Quack!', frog: 'Ribbit!', chick: 'Peep!', farmer: 'Hello!' };
 const NUM = ['', 'One!', 'Two!', 'Three!', 'Four!', 'Five!', 'Six!', 'Seven!'];
 SFX.creak = t => osc({ f: 140, to: 95, t, d: 1.1, v: 0.05, type: 'sawtooth', lp: 700, a: 0.05, hold: 1, vib: { f: 22, depth: 18 } });
 SFX.blip = t => osc({ f: 700, to: 1200, t, d: 0.08, v: 0.04 });
@@ -694,6 +695,19 @@ BUILD.farmer = function (b) {
   const hose = grp(0, -0.75, 0.05, arms[0]); const hs = cyl(0.05, 0.05, 0.55, 0x3a9d3a, 6); hs.rotation.x = Math.PI / 2; at(hs, 0, 0, 0.22, hose); const tip = grp(0, 0, 0.55, hose);
   return { headG: h, legs: [], wings: [], farmer: { legs, arms, bucket, hose, tip } };
 };
+BUILD.rooster = function (b) {
+  const RUST = 0xc8642a, GOLD = 0xe8a23a, TAILC = [0x1f4d36, 0x2a2a2a, 0x2e6b4a];
+  at(ell(0.44, 0.4, 0.37, RUST), 0, 0.66, 0, b);
+  [[0.2, 1.25], [0, 1.05], [-0.2, 1.25], [0.1, 0.85], [-0.1, 0.85]].forEach(([dz, rot], i) => { const f = cone(0.1, 0.75, TAILC[i % 3], 6); f.rotation.z = rot; f.rotation.x = dz * 2.2; at(f, -0.48, 1.05, dz * 0.8, b); });
+  const neck = cyl(0.13, 0.19, 0.38, GOLD, 8); neck.rotation.z = -0.35; at(neck, 0.32, 0.98, 0, b);
+  const h = grp(0.45, 1.24, 0, b); at(sph(0.23, GOLD, {}, 12), 0, 0, 0, h);
+  at(cone(0.065, 0.22, C.BEAK, 6), 0.29, -0.02, 0, h).rotation.z = -Math.PI / 2;
+  [[-0.12, 0.24, 0.08], [-0.03, 0.3, 0.09], [0.06, 0.31, 0.09], [0.14, 0.26, 0.08]].forEach(([x, y, r]) => at(noShadow(sph(r, C.RED, {}, 8)), x, y, 0, h));
+  at(noShadow(ell(0.06, 0.11, 0.05, C.RED)), 0.21, -0.18, 0, h);
+  eyes(h, 0.15, 0.06, 0.15, 0.042);
+  const wings = [-1, 1].map(s => { const piv = grp(0, 0.8, s * 0.3, b); at(ell(0.32, 0.16, 0.06, 0x8a3a1c), -0.05, -0.1, s * 0.1, piv); return { piv, s }; });
+  return { headG: h, legs: addLegs(b, [[0.05, 0.12], [0.05, -0.12]], { hipY: 0.4, upper: 0.2, lower: 0.18, r: 0.04, color: C.BEAK, hoof: C.BEAK, foot: [0.22, 0.13] }), wings, bird: true };
+};
 BUILD.chick = function (b) {
   at(sph(0.32, 0xf7d548, {}, 12), 0, 0.42, 0, b);
   const h = grp(0.22, 0.8, 0, b); at(sph(0.24, 0xf7d548, {}, 12), 0, 0, 0, h); at(cone(0.07, 0.18, C.BILL, 6), 0.27, -0.03, 0, h).rotation.z = -Math.PI / 2; eyes(h, 0.16, 0.06, 0.13, 0.045);
@@ -722,6 +736,8 @@ function buildCast() {
   cast.piglets = [0, 1].map(() => makeActor('pig', { scale: 0.5, baby: true, name: 'Piglet' }));
   cast.calf = makeActor('cow', { scale: 0.55, baby: true, name: 'Calf', pitch: 1.3 });
   cast.lamb = makeActor('sheep', { scale: 0.55, baby: true, voice: 'lamb', pitch: 1.05, name: 'Lamb' });
+  cast.rooster = makeActor('rooster', { name: 'Rocky' });
+  cast.chicks = [0, 1, 2, 3].map(() => makeActor('chick', { scale: 0.8, baby: true, voice: 'chicken', pitch: 1.7, name: 'Chick' }));
   cast.chick = makeActor('chick', { scale: 0.6, baby: true, voice: 'chicken', pitch: 1.7, name: 'Chick' });
   cast.duckling = makeActor('duck', { scale: 0.5, baby: true, pitch: 1.45, name: 'Duckling' });
   cast.froglet = makeActor('frog', { scale: 0.55, baby: true, pitch: 1.45, name: 'Froglet' });
@@ -826,145 +842,158 @@ function screenSplash() { if (reduced) return; dropsEl.classList.remove('show');
 const capEl = $('caption'), bannerOv = $('bannerOv'), bannerTxt = $('bannerTxt'), countOv = $('countOv'), countTxt = $('countTxt'), fadeOv = $('fadeOv'), startOv = $('startOv'), startBtn = $('startBtn');
 const VO_FILES = {
   /* VO-BEGIN */
-  "Good morning, Wilbur!": 'vo/3cfbe5eadb.mp3',
-  "Good morning, Daisy!": 'vo/981d09daf7.mp3',
-  "Good morning, Woolly!": 'vo/2e47665afb.mp3',
-  "Good morning, Henrietta!": 'vo/323216c9b0.mp3',
-  "Good morning, Buttercup!": 'vo/1c2a118c4f.mp3',
-  "Good morning, Billy!": 'vo/0ec3f3b1f0.mp3',
-  "Good morning, Puddles!": 'vo/f0f61e533a.mp3',
-  "Good morning, Hoppy!": 'vo/d62dd7ccc4.mp3',
-  "Cock-a-doodle-doo! Good morning, farm!": 'vo/cb9dc4eb7d.mp3',
-  "Shh. The animals are still sleeping.": 'vo/0fb395c0cf.mp3',
-  "Tap an animal to wake it up!": 'vo/8589aa4bda.mp3',
-  "Who else is sleeping?": 'vo/d47a9df42b.mp3',
-  "Wake up another one!": 'vo/45d9857110.mp3',
-  "Tap a sleepy animal!": 'vo/04dfd68eeb.mp3',
-  "Everybody is awake! Good morning, everybody!": 'vo/a51faa0711.mp3',
-  "Yum yum! Oink oink!": 'vo/658ac7f811.mp3',
-  "Yum yum! Moo!": 'vo/225975b00e.mp3',
-  "Yum yum! Baa!": 'vo/b32c95942b.mp3',
-  "Yum yum! Bawk bawk!": 'vo/c8fcc954eb.mp3',
-  "Crunch crunch! Neigh!": 'vo/f28a235263.mp3',
-  "Yum yum! Meh-eh-eh!": 'vo/4996608c59.mp3',
-  "Yum yum! Quack quack!": 'vo/5a6555fbba.mp3',
-  "Got it! Ribbit!": 'vo/866ad7f1bd.mp3',
-  "Hoppy wants a bug! Bzzz!": 'vo/005c9299f3.mp3',
-  "Feeding time! Who's hungry?": 'vo/ed83b11c58.mp3',
-  "Tap a hungry animal to feed it!": 'vo/38c819a07d.mp3',
-  "Who is still hungry?": 'vo/e0c549a073.mp3',
-  "Feed another one!": 'vo/434550e818.mp3',
-  "Tap a hungry tummy!": 'vo/b10864c985.mp3',
-  "Everybody is full. Thank you!": 'vo/91a9e3f37b.mp3',
-  "Wilbur and the piglets found a big mud puddle!": 'vo/be02f435a0.mp3',
-  "Tap a piggy to jump in the mud!": 'vo/8b06a88992.mp3',
-  "Tap the next piggy!": 'vo/933988eb6f.mp3',
-  "Splish!": 'vo/b29bfeb167.mp3',
-  "Splash!": 'vo/844e18c88f.mp3',
-  "Sploosh!": 'vo/a9325863d1.mp3',
-  "Muddy, muddy piggies!": 'vo/279f040b95.mp3',
-  "Uh oh! Bath time, piggies!": 'vo/f07412884a.mp3',
-  "Tap a muddy piggy to wash it!": 'vo/2b513ba5dc.mp3',
-  "Splash! Tap again!": 'vo/425653aa1c.mp3',
-  "Scrub-a-dub-dub!": 'vo/6454ef3e31.mp3',
-  "More bubbles!": 'vo/d8bace31ff.mp3',
-  "Squeaky clean piggies!": 'vo/440b1a1a30.mp3',
-  "Time to bring the sheep home!": 'vo/3faba74c07.mp3',
-  "Tap a sheep to send it home!": 'vo/251a3f7f35.mp3',
-  "Tap another sheep!": 'vo/22521bd7d7.mp3',
-  "Who is next?": 'vo/435f3c5c79.mp3',
-  "Baa! Tap a sheep!": 'vo/a28c748cc8.mp3',
-  "Oh! Billy the goat wants to come too!": 'vo/4d03e23999.mp3',
-  "Tap Billy!": 'vo/c31571b854.mp3',
-  "Everybody is home! Hooray!": 'vo/f9deb61507.mp3',
-  "Two little piglets are lost!": 'vo/1627f0bd5d.mp3',
-  "Here I am, says Wilbur!": 'vo/72016732bd.mp3',
-  "Wilbur found the piglets! Hooray!": 'vo/ae74a2800f.mp3',
-  "The little duckling is lost!": 'vo/35c0785600.mp3',
-  "Here I am, says Puddles!": 'vo/8b63d0e0f6.mp3',
-  "Puddles found the duckling! Quack quack!": 'vo/ace074dd36.mp3',
-  "The little calf is lost!": 'vo/4431706d2e.mp3',
-  "Here I am, says Daisy!": 'vo/933e372d1d.mp3',
-  "Daisy found the calf! Moo!": 'vo/f67389b091.mp3',
-  "The little froglet is lost!": 'vo/5fede1cf27.mp3',
-  "Here I am, says Hoppy!": 'vo/5192675aeb.mp3',
-  "Hoppy found the froglet! Ribbit!": 'vo/7326be789f.mp3',
-  "The little lamb is lost!": 'vo/361970cb30.mp3',
-  "Here I am, says Woolly!": 'vo/ff7032a68b.mp3',
-  "Woolly found the lamb! Baa!": 'vo/6222ebb7cc.mp3',
-  "The little chick is lost!": 'vo/0f2f842ac2.mp3',
-  "Here I am, says Henrietta!": 'vo/a647955345.mp3',
-  "Henrietta found the chick! Peep peep!": 'vo/4dd8b7e060.mp3',
-  "Some babies got lost on the farm!": 'vo/1b82a05e2d.mp3',
-  "Tap the baby to call Mama!": 'vo/dd91aae236.mp3',
-  "Tap Mama!": 'vo/58f06a6987.mp3',
-  "Everybody found their mama!": 'vo/cfa7c1a00d.mp3',
-  "Night night, Buttercup!": 'vo/589df0e00f.mp3',
-  "Night night, Daisy and the calf!": 'vo/6289473a51.mp3',
-  "Night night, Billy!": 'vo/48496a5368.mp3',
-  "Night night, sheep!": 'vo/b3d16da59b.mp3',
-  "Night night, Wilbur and the piglets!": 'vo/26402cec32.mp3',
-  "Night night, Henrietta and the chick!": 'vo/7b4fdba6b9.mp3',
-  "The sun is going down. Time for bed, animals!": 'vo/594fcb5012.mp3',
-  "Tap an animal to tuck it into bed!": 'vo/77f9a34ffd.mp3',
-  "Who else is sleepy?": 'vo/7a954c27a4.mp3',
-  "Tap the next sleepy animal!": 'vo/eadacfb8a6.mp3',
-  "Who goes to bed next?": 'vo/c7fa5eb981.mp3',
-  "The ducks and frogs sleep by the pond.": 'vo/2944ed48c5.mp3',
-  "Tap the ducks!": 'vo/4cf62287c9.mp3',
-  "Float, float on the pond. Quack!": 'vo/281a40d168.mp3',
-  "Tap the frogs!": 'vo/b7d412268c.mp3',
-  "Hop onto a lily pad! Ribbit!": 'vo/ae42e4262f.mp3',
-  "Tap the barn to turn off the light!": 'vo/5bfb478941.mp3',
-  "Good night, farm!": 'vo/b5f6e967dc.mp3',
-  "Good night, Violet!": 'vo/2f81f51382.mp3',
-  "Good morning!": 'vo/ce784fba49.mp3',
-  "Feeding Time": 'vo/94b1c7f045.mp3',
-  "Muddy Pig Bath": 'vo/0f61f4a43d.mp3',
-  "Mama and Baby": 'vo/8310dd3588.mp3',
-  "The end! Tap an animal, or pick another game.": 'vo/717c541428.mp3',
-  "One!": 'vo/2d33d39ed5.mp3',
-  "Two!": 'vo/c725cd1ef3.mp3',
-  "Three!": 'vo/a2f134f6a6.mp3',
-  "Four!": 'vo/dacdca9ef0.mp3',
-  "Five!": 'vo/d6b575227c.mp3',
-  "Six!": 'vo/22775bb811.mp3',
-  "Seven!": 'vo/4a9e017bbe.mp3',
-  "Who says oink oink?": 'vo/e20f056510.mp3',
-  "It's Wilbur the pig!": 'vo/4badf22cd9.mp3',
-  "Who says quack quack?": 'vo/47fa1e6772.mp3',
-  "It's Puddles the duck!": 'vo/336ac70688.mp3',
-  "Who says baa?": 'vo/8064c3be4f.mp3',
-  "It's Woolly the sheep!": 'vo/a84f90c8e3.mp3',
-  "Who says ribbit?": 'vo/02794dcd8f.mp3',
-  "It's Hoppy the frog!": 'vo/3fa6a94370.mp3',
-  "Who says bawk bawk?": 'vo/a842a0840b.mp3',
-  "It's Henrietta the chicken!": 'vo/b3c43ff3b3.mp3',
-  "Some animals are hiding! Listen!": 'vo/b53c4e2097.mp3',
-  "Tap the wiggly bush!": 'vo/aa39e57636.mp3',
-  "You found everybody! Hooray!": 'vo/b5f457a6c3.mp3',
-  "Pond party! Hoppy loves to hop!": 'vo/8fd511b3aa.mp3',
-  "Hop again!": 'vo/97dd388bd0.mp3',
-  "Another lily pad!": 'vo/1f545efc19.mp3',
-  "Hop, hop, hop!": 'vo/01a3cc6f10.mp3',
-  "Tap a lily pad to make Hoppy hop!": 'vo/3e237a4fed.mp3',
-  "Now the ducks! Splash time!": 'vo/1174cd2823.mp3',
-  "Splash again!": 'vo/6979144583.mp3',
-  "Dive, duck, dive!": 'vo/8cb8a3dd65.mp3',
-  "Again! Tap a duck!": 'vo/d295788cd3.mp3',
-  "Tap a duck to make it dive!": 'vo/d9972aec78.mp3',
-  "Bzzz! Bugs are buzzing!": 'vo/df4978f155.mp3',
-  "Another bug! Tap it!": 'vo/7b41eec5b5.mp3',
-  "Tap the buzzing bug!": 'vo/19697f85ff.mp3',
-  "Yum! Ribbit!": 'vo/ed24d7564e.mp3',
-  "Got it!": 'vo/140b70eec3.mp3',
-  "Gulp! Ribbit!": 'vo/3309a2a176.mp3',
-  "What a pond party!": 'vo/e315c7656d.mp3',
-  "Tap the barn to close the door!": 'vo/9af92b62f9.mp3',
-  "Who's Hiding?": 'vo/c0e85c9ec5.mp3',
-  "Pond Party": 'vo/8b06ba5c50.mp3',
-  "Round-Up": 'vo/8b3c62827d.mp3',
-  "Bedtime": 'vo/cfd0d6550a.mp3',
+  "Good morning, Wilbur!": 'vo/f23413810d.mp3',
+  "Good morning, Daisy!": 'vo/ce7009feee.mp3',
+  "Good morning, Woolly!": 'vo/fcd8ab1bdf.mp3',
+  "Good morning, Henrietta!": 'vo/1d2160fde7.mp3',
+  "Good morning, Buttercup!": 'vo/c3988dccec.mp3',
+  "Good morning, Billy!": 'vo/dc2c1fc2be.mp3',
+  "Good morning, Puddles!": 'vo/31f4296fb4.mp3',
+  "Good morning, Hoppy!": 'vo/2c90ab71f3.mp3',
+  "Rocky the rooster wakes up the farm. Tap Rocky!": 'vo/daa392ca02.mp3',
+  "Cock-a-doodle-doo! Good morning, farm!": 'vo/1badcf598f.mp3',
+  "Shh. The animals are still sleeping.": 'vo/d8a0a5ce64.mp3',
+  "Tap an animal to wake it up!": 'vo/4d3aa3c098.mp3',
+  "Who else is sleeping?": 'vo/8ee28a70a9.mp3',
+  "Wake up another one!": 'vo/ddecc57afb.mp3',
+  "Tap a sleepy animal!": 'vo/67bfa06c1f.mp3',
+  "Everybody is awake! Good morning, everybody!": 'vo/530e343790.mp3',
+  "Yum yum! Oink oink!": 'vo/12b6bed937.mp3',
+  "Yum yum! Moo!": 'vo/898a167a0a.mp3',
+  "Yum yum! Baa!": 'vo/f71715c5bf.mp3',
+  "Yum yum! Bawk bawk!": 'vo/6b71f9460c.mp3',
+  "Crunch crunch! Neigh!": 'vo/b54234b5aa.mp3',
+  "Yum yum! Meh-eh-eh!": 'vo/0e17a433ea.mp3',
+  "Yum yum! Quack quack!": 'vo/9d176cfa84.mp3',
+  "Got it! Ribbit!": 'vo/4b76d466e9.mp3',
+  "Feeding time! Who's hungry?": 'vo/bfa20ac23a.mp3',
+  "Tap a hungry animal to feed it!": 'vo/53eb95e410.mp3',
+  "Who is still hungry?": 'vo/20ebdbc3c7.mp3',
+  "Feed another one!": 'vo/0f501846f6.mp3',
+  "Tap a hungry tummy!": 'vo/6ef85e2a50.mp3',
+  "Everybody is full. Thank you!": 'vo/37ab732522.mp3',
+  "Who says oink oink?": 'vo/444e396826.mp3',
+  "It's Wilbur the pig!": 'vo/0c5af8a1dd.mp3',
+  "Who says quack quack?": 'vo/1f44783d9e.mp3',
+  "It's Puddles the duck!": 'vo/08d6431c72.mp3',
+  "Who says baa?": 'vo/42b74fc157.mp3',
+  "It's Woolly the sheep!": 'vo/c30230363a.mp3',
+  "Who says ribbit?": 'vo/964b1418ba.mp3',
+  "It's Hoppy the frog!": 'vo/3e17fefeeb.mp3',
+  "Who says bawk bawk?": 'vo/41228afc69.mp3',
+  "It's Henrietta the chicken!": 'vo/4f149bea18.mp3',
+  "Some animals are hiding! Listen!": 'vo/e7bd2808b7.mp3',
+  "Tap the wiggly bush!": 'vo/7a407be26c.mp3',
+  "You found everybody! Hooray!": 'vo/6ed0b4882c.mp3',
+  "Hoppy wants a bug! Bzzz!": 'vo/982d7a4540.mp3',
+  "Pond party! Hoppy loves to hop!": 'vo/d34bb0c2d5.mp3',
+  "Hop again!": 'vo/2b61d68599.mp3',
+  "Another lily pad!": 'vo/58a493a574.mp3',
+  "Hop, hop, hop!": 'vo/a230177415.mp3',
+  "Tap a lily pad to make Hoppy hop!": 'vo/949ab62115.mp3',
+  "Now the ducks! Splash time!": 'vo/1192db2c35.mp3',
+  "Splash again!": 'vo/f8155fdc95.mp3',
+  "Dive, duck, dive!": 'vo/9a4ed256ae.mp3',
+  "Again! Tap a duck!": 'vo/c05b5996dd.mp3',
+  "Tap a duck to make it dive!": 'vo/bea96ba494.mp3',
+  "Bzzz! Bugs are buzzing!": 'vo/627ef3c803.mp3',
+  "Another bug! Tap it!": 'vo/0b57a429c7.mp3',
+  "Tap the buzzing bug!": 'vo/8d38539356.mp3',
+  "Yum! Ribbit!": 'vo/1dc514c5ab.mp3',
+  "Got it!": 'vo/f8253f8074.mp3',
+  "Gulp! Ribbit!": 'vo/18e6358df4.mp3',
+  "What a pond party!": 'vo/63fcdb071d.mp3',
+  "Henrietta laid some eggs in the hay! Can you find them?": 'vo/66ae2ddffc.mp3',
+  "Tap the hay to look for an egg!": 'vo/05cd87bdca.mp3',
+  "Look in the hay!": 'vo/8d355659a0.mp3',
+  "Another egg is hiding!": 'vo/a3a26c9d33.mp3',
+  "Tap the hay!": 'vo/c28b1feb53.mp3',
+  "An egg!": 'vo/c6c6f50ae7.mp3',
+  "Tap the egg!": 'vo/d9661db201.mp3',
+  "Peep peep! A baby chick!": 'vo/98b3e40a1c.mp3',
+  "Hello, little chick!": 'vo/5772bb1af4.mp3',
+  "Peep peep!": 'vo/fd40c16690.mp3',
+  "Four little chicks!": 'vo/44f1dd7302.mp3',
+  "Rocky the rooster is so proud! Cock-a-doodle-doo!": 'vo/f41a01e029.mp3',
+  "Wilbur and the piglets found a big mud puddle!": 'vo/919530938c.mp3',
+  "Tap a piggy to jump in the mud!": 'vo/adf974478c.mp3',
+  "Tap the next piggy!": 'vo/d0bebaa808.mp3',
+  "Splish!": 'vo/70c89015e9.mp3',
+  "Splash!": 'vo/6dd8137e48.mp3',
+  "Sploosh!": 'vo/5a8b471547.mp3',
+  "Muddy, muddy piggies!": 'vo/298941f7f8.mp3',
+  "Uh oh! Bath time, piggies!": 'vo/8615bed624.mp3',
+  "Tap a muddy piggy to wash it!": 'vo/275e48c12a.mp3',
+  "Splash! Tap again!": 'vo/2c67e115fb.mp3',
+  "Scrub-a-dub-dub!": 'vo/8dbd0cb5f4.mp3',
+  "More bubbles!": 'vo/8166ff6d4b.mp3',
+  "Squeaky clean piggies!": 'vo/0f75e16861.mp3',
+  "Time to bring the sheep home!": 'vo/518f683433.mp3',
+  "Tap a sheep to send it home!": 'vo/b5c24e906d.mp3',
+  "Tap another sheep!": 'vo/0a533f43ca.mp3',
+  "Who is next?": 'vo/e0479f660f.mp3',
+  "Baa! Tap a sheep!": 'vo/51c3edfba1.mp3',
+  "Oh! Billy the goat wants to come too!": 'vo/582611028e.mp3',
+  "Tap Billy!": 'vo/d7461291c3.mp3',
+  "Everybody is home! Hooray!": 'vo/1dd520c09f.mp3',
+  "Two little piglets are lost!": 'vo/3afe03d719.mp3',
+  "Here I am, says Wilbur!": 'vo/a4e2019236.mp3',
+  "Wilbur found the piglets! Hooray!": 'vo/f8a5b09040.mp3',
+  "The little duckling is lost!": 'vo/ba3e0b590a.mp3',
+  "Here I am, says Puddles!": 'vo/8b06f82f1f.mp3',
+  "Puddles found the duckling! Quack quack!": 'vo/83aeab15bf.mp3',
+  "The little calf is lost!": 'vo/b80402a856.mp3',
+  "Here I am, says Daisy!": 'vo/70bd55e018.mp3',
+  "Daisy found the calf! Moo!": 'vo/3d82e0e3ef.mp3',
+  "The little froglet is lost!": 'vo/49fdc2d55b.mp3',
+  "Here I am, says Hoppy!": 'vo/64b6d2b366.mp3',
+  "Hoppy found the froglet! Ribbit!": 'vo/9322db29c2.mp3',
+  "The little lamb is lost!": 'vo/eb5a949541.mp3',
+  "Here I am, says Woolly!": 'vo/d5acb69158.mp3',
+  "Woolly found the lamb! Baa!": 'vo/e5cabcc497.mp3',
+  "The little chick is lost!": 'vo/2070a35b82.mp3',
+  "Here I am, says Henrietta!": 'vo/7a4ab4a0ae.mp3',
+  "Henrietta found the chick! Peep peep!": 'vo/1d4f82ecc6.mp3',
+  "Some babies got lost on the farm!": 'vo/9411f89113.mp3',
+  "Tap the baby to call Mama!": 'vo/62e1db56fa.mp3',
+  "Tap Mama!": 'vo/6898a60b88.mp3',
+  "Everybody found their mama!": 'vo/3c88a29e83.mp3',
+  "Night night, Buttercup!": 'vo/0fbabf647d.mp3',
+  "Night night, Daisy and the calf!": 'vo/9c272df495.mp3',
+  "Night night, Billy!": 'vo/122783ab4e.mp3',
+  "Night night, sheep!": 'vo/d66ce100bb.mp3',
+  "Night night, Wilbur and the piglets!": 'vo/a62f5685a0.mp3',
+  "Night night, Henrietta, Rocky and the chick!": 'vo/2c4ce76c6b.mp3',
+  "The sun is going down. Time for bed, animals!": 'vo/0daa174939.mp3',
+  "Tap an animal to tuck it into bed!": 'vo/886277a240.mp3',
+  "Who else is sleepy?": 'vo/3d2675d876.mp3',
+  "Tap the next sleepy animal!": 'vo/9e96d4c3ab.mp3',
+  "Who goes to bed next?": 'vo/32f65f233b.mp3',
+  "The ducks and frogs sleep by the pond.": 'vo/1a1bc0dc13.mp3',
+  "Tap the ducks!": 'vo/2dd629b710.mp3',
+  "Float, float on the pond. Quack!": 'vo/4a5cee7cc4.mp3',
+  "Tap the frogs!": 'vo/1138d78966.mp3',
+  "Hop onto a lily pad! Ribbit!": 'vo/69d3e99b91.mp3',
+  "Tap the barn to close the door!": 'vo/49e7952d92.mp3',
+  "Good night, farm!": 'vo/bb86a8a81f.mp3',
+  "Good night, Violet!": 'vo/945b2ce016.mp3',
+  "Good morning!": 'vo/0e8f9b81e7.mp3',
+  "Feeding Time": 'vo/528ee4443a.mp3',
+  "Who's Hiding?": 'vo/8311194e34.mp3',
+  "Muddy Pig Bath": 'vo/d7d0a5f16a.mp3',
+  "Pond Party": 'vo/a52d5bb28a.mp3',
+  "Egg Hunt": 'vo/e5e3974144.mp3',
+  "Mama and Baby": 'vo/30338e3627.mp3',
+  "The end! Tap an animal, or pick another game.": 'vo/13459ba14b.mp3',
+  "One!": 'vo/c8431fdb89.mp3',
+  "Two!": 'vo/796c6e85d6.mp3',
+  "Three!": 'vo/a613af5428.mp3',
+  "Four!": 'vo/4cd9771627.mp3',
+  "Five!": 'vo/de7f5d6752.mp3',
+  "Six!": 'vo/6a9affe7a6.mp3',
+  "Seven!": 'vo/8645269573.mp3',
+  "Round-Up": 'vo/33cf92acd4.mp3',
+  "Bedtime": 'vo/adc3c28aa4.mp3',
   /* VO-END */
 };
 const voData = {}, voBufs = {};
@@ -1054,18 +1083,21 @@ const GOOD_MORNING = { pig: 'Good morning, Wilbur!', cow: 'Good morning, Daisy!'
 function setupMorning() {
   setSky(0.55);
   YARD.forEach((id, i) => { place(cast[id], -15 + i * 3.2, 1.5 + (i % 2) * 1.6 + Math.sin(i) * 0.5); cast[id].sleep = true; });
+  place(cast.rooster, 11, 4.5, Math.PI * 0.85); cast.rooster.sleep = true;
   shot(-4, 5.4, 18, -4, 1.2, 1);
 }
 async function sceneMorning() {
   tween(4, k => setSky(0.55 * (1 - k)));
-  every(1.4, 600, () => { for (const id of YARD) { const a = cast[id]; if (a.sleep) { const p = headPos(a); zzz(p.x, p.y + 0.5, p.z, 0.6); } } });
-  play('rooster'); await talk('Cock-a-doodle-doo! Good morning, farm!');
+  every(1.4, 600, () => { for (const id of YARD) { const a = cast[id]; if (a.sleep) { const p = headPos(a); zzz(p.x, p.y + 0.5, p.z, 0.6); } } if (cast.rooster.sleep) { const p = headPos(cast.rooster); zzz(p.x, p.y + 0.5, p.z, 0.6); } });
+  framePair(cast.rooster, cast.rooster, 1.2); await talk('Rocky the rooster wakes up the farm. Tap Rocky!', 0);
+  await yourTurn([cast.rooster]); cast.rooster.sleep = false; greet(cast.rooster, 2); await wait(0.6); await talk('Cock-a-doodle-doo! Good morning, farm!');
+  shot(-4, 5.4, 18, -4, 1.2, 1);
   await talk('Shh. The animals are still sleeping.');
   let sleepy = YARD.map(id => cast[id]), first = true;
   while (sleepy.length) {
     const a = await yourTurn(sleepy, first ? 'Tap an animal to wake it up!' : pick(['Who else is sleeping?', 'Wake up another one!', 'Tap a sleepy animal!']));
     first = false; sleepy = sleepy.filter(b => b !== a);
-    a.sleep = false; greet(a, 2); say(GOOD_MORNING[a.id]); await wait(1.4);
+    a.sleep = false; if (a.id === 'chicken') setTimeout(() => call(cast.rooster), 1200); greet(a, 2); say(GOOD_MORNING[a.id]); await wait(1.4);
   }
   await talk('Everybody is awake! Good morning, everybody!', 0);
   YARD.forEach((id, i) => setTimeout(() => cast[id].root.visible && greet(cast[id]), 300 + i * 260)); await wait(3.5);
@@ -1207,6 +1239,38 @@ async function scenePond() {
   say('What a pond party!'); play('cheer'); [cast.frog, cast.froglet, cast.duck, cast.duckling].forEach((a, i) => setTimeout(() => greet(a, 2), i * 300)); await wait(3.6); stopMusic(1.2);
 }
 
+const NESTS = [[-5.4, 9], [-1.8, 9.6], [1.8, 9], [5.4, 9.6]];
+function setupEggs() {
+  place(cast.chicken, -3.5, 5.6, FACE_CAM); place(cast.rooster, 3.8, 5.4, FACE_CAM);
+  world.nests = NESTS.map(([x, z]) => {
+    const g = grp(x, 0, z, scene); world.foods.push(g);
+    [[0, 0.35, 0, 0.95, 0.5], [-0.5, 0.25, 0.3, 0.6, 0.35], [0.55, 0.25, 0.2, 0.6, 0.38], [0.1, 0.62, -0.1, 0.6, 0.35]].forEach(([bx, by, bz, r, ry]) => at(ell(r, ry, r * 0.85, pick([C.HAY, 0xd9b24a, 0xf0d070])), bx, by, bz, g));
+    for (let i = 0; i < 8; i++) { const s = box(rnd(0.5, 0.9), 0.05, 0.06, pick([C.HAY, 0xd9b24a])); s.rotation.set(rnd(-0.4, 0.4), rnd(0, TAU), rnd(-0.4, 0.4)); at(s, rnd(-0.9, 0.9), rnd(0.15, 0.8), rnd(-0.5, 0.6), g); }
+    return g;
+  });
+  shot(0, 3.8, 17, 0, 0.8, 8.5);
+}
+async function sceneEggs() {
+  music('mary', 84, true); musicLevel(MUSIC_VOL * 0.7);
+  greet(cast.chicken, 2); await talk('Henrietta laid some eggs in the hay! Can you find them?');
+  let left = world.nests.map((g, i) => ({ spot: true, p: V(g.position.x, 1.2, g.position.z), size: 1.4, i })), first = true;
+  while (left.length) {
+    const t = await yourTurn(left, first ? 'Tap the hay to look for an egg!' : pick(['Look in the hay!', 'Another egg is hiding!', 'Tap the hay!']));
+    first = false; left = left.filter(x => x !== t);
+    const g = world.nests[t.i], x = g.position.x, z = g.position.z + 0.6;
+    play('whoosh'); burst(V(x, 0.8, z - 0.6), [C.HAY, 0xd9b24a, 0xf0d070], 16, 2.5, 4); tween(0.5, k => g.scale.set(1, 1 - 0.65 * k, 1));
+    const egg = at(ell(0.26, 0.34, 0.26, 0xfff3dc), x, 0.34, z, scene); world.foods.push(egg); play('boing'); say('An egg!');
+    await yourTurn([{ spot: true, p: V(x, 0.5, z), size: 0.75, dz: 0 }], 'Tap the egg!');
+    play('crunch'); await tween(0.9, k => { egg.rotation.z = Math.sin(k * 30) * 0.25 * (1 - k * 0.3); }); play('crunch');
+    scene.remove(egg); burst(V(x, 0.4, z), [0xfff3dc, 0xffffff, 0xf2e2c0], 14, 1.6, 3);
+    const chick = cast.chicks[t.i]; place(chick, x, z, FACE_CAM); leapTo(chick, x + 0.2, z - 2, 0.9, 0.6).then(() => (chick.face = FACE_CAM)); greet(chick, 2); say(pick(['Peep peep! A baby chick!', 'Hello, little chick!', 'Peep peep!']));
+    setTimeout(() => call(cast.chicken), 900); await wait(1.8);
+  }
+  await talk('Four little chicks!');
+  cast.chicks.forEach((c, i) => setTimeout(() => greet(c, 1), i * 250)); greet(cast.chicken, 2); await wait(1.2);
+  greet(cast.rooster, 3); say('Rocky the rooster is so proud! Cock-a-doodle-doo!'); await wait(3.6); stopMusic(1.2);
+}
+
 function setupBath() {
   const pigs = [cast.pig, ...cast.piglets];
   pigs.forEach((p, i) => place(p, MUD.x - 8 - i * 1.4, MUD.z + 1 - i * 1.2, 0));
@@ -1311,12 +1375,12 @@ async function sceneMama() {
   shot(4, 8, 28, 4, 0.8, 4, 0.6); say('Everybody found their mama!'); play('cheer'); await wait(3.6); stopMusic(1.2);
 }
 
-const NIGHT = ['Night night, Buttercup!', 'Night night, Daisy and the calf!', 'Night night, Billy!', 'Night night, sheep!', 'Night night, Wilbur and the piglets!', 'Night night, Henrietta and the chick!'];
+const NIGHT = ['Night night, Buttercup!', 'Night night, Daisy and the calf!', 'Night night, Billy!', 'Night night, sheep!', 'Night night, Wilbur and the piglets!', 'Night night, Henrietta, Rocky and the chick!'];
 function setupBed() {
   setSky(0.2); world.troughs.visible = false; // the farmer tidied up for the night
   place(cast.horse, -20, -3); place(cast.cow, -16, -2.4); place(cast.calf, -15, -0.6); place(cast.goat, -12, -3.2);
   place(cast.sheep, -8, -2.2); cast.flock.forEach((s, i) => place(s, -9.5 + i * 1.2, -0.4 + (i % 2) * 1.3)); place(cast.lamb, -6.5, 0.8);
-  place(cast.pig, -3, -2.4); place(cast.piglets[0], -2.2, -0.8); place(cast.piglets[1], -3.6, -0.5); place(cast.chicken, 1.2, -1.6); place(cast.chick, 2, -0.4);
+  place(cast.pig, -3, -2.4); place(cast.piglets[0], -2.2, -0.8); place(cast.piglets[1], -3.6, -0.5); place(cast.chicken, 1.2, -1.6); place(cast.rooster, 3, -2.2); place(cast.chick, 2, -0.4);
   place(cast.duck, POND.x - 2.6, POND.z + 0.6, 0); place(cast.duckling, POND.x - 1.4, POND.z + 1.7, 0); place(cast.frog, POND.x - 7, POND.z - 0.4, 0); place(cast.froglet, POND.x - 6.6, POND.z + 1, 0);
   shot(-7, 6, 15, -10, 1.5, -4);
 }
@@ -1325,7 +1389,7 @@ async function sceneBed() {
   tween(9, k => { setSky(0.2 + 0.8 * k); setGlow(clamp(k * 1.6 - 0.4, 0, 1)); });
   await talk('The sun is going down. Time for bed, animals!', 0.2);
   play('creak'); await tween(1.6, k => setDoors(Math.sin(k * Math.PI / 2))); await wait(0.4);
-  const groups = [[cast.horse], [cast.cow, cast.calf], [cast.goat], [cast.sheep, ...cast.flock, cast.lamb], [cast.pig, ...cast.piglets], [cast.chicken, cast.chick]];
+  const groups = [[cast.horse], [cast.cow, cast.calf], [cast.goat], [cast.sheep, ...cast.flock, cast.lamb], [cast.pig, ...cast.piglets], [cast.chicken, cast.rooster, cast.chick]];
   const go = async (m, j) => { await wait(j * 0.4); m.intoBarn = true; await walkTo(m, DOOR.x + rnd(-1.6, 1.6), DOOR.z + 1.2, 2.3); return walkTo(m, posOf(m).x, BARN.z, 2.3); };
   let left = groups.slice(), first = true; const walks = [];
   while (left.length) {
@@ -1358,6 +1422,7 @@ const SCENES = [
   { id: 'hide', title: "Who's Hiding?", emoji: '🌳', setup: setupHide, run: sceneHide },
   { id: 'bath', title: 'Muddy Pig Bath', emoji: '🐷', setup: setupBath, run: sceneBath },
   { id: 'pond', title: 'Pond Party', emoji: '🐸', setup: setupPond, run: scenePond },
+  { id: 'eggs', title: 'Egg Hunt', emoji: '🥚', setup: setupEggs, run: sceneEggs },
   { id: 'roundup', title: 'Round-Up', emoji: '🐑', setup: setupRoundUp, run: sceneRoundUp },
   { id: 'mama', title: 'Mama and Baby', emoji: '🐣', setup: setupMama, run: sceneMama },
   { id: 'bed', title: 'Bedtime', emoji: '🌙', setup: setupBed, run: sceneBed },
