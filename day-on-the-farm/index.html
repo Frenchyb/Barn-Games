@@ -1,0 +1,1114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Day on the Farm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --sky:#bfe7ff; --sky-2:#8fd0ff; --cream:#fff8ea; --line:#e6d6b8;
+  --ink:#3d2a16; --muted:#8a704f; --barn:#d7413f; --barn-deep:#a52b2a;
+  --sun:#ffcc33; --sun-deep:#d9a21b; --pink:#ff8fb1;
+  --display:"Lilita One","Arial Rounded MT Bold",system-ui,sans-serif;
+  --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%;margin:0}
+body{background:var(--sky);background-image:linear-gradient(180deg,#9fd6ff 0%,#cfeeff 45%,#eaf7e3 100%);background-attachment:fixed;color:var(--ink);font:16px/1.5 var(--body);overflow-x:hidden}
+.app{max-width:1320px;margin:0 auto;padding-inline:clamp(16px,3vw,32px);padding-block:14px 48px;display:flex;flex-direction:column;gap:18px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand-name{font-family:var(--display);font-size:2rem;color:var(--barn);line-height:1.05;text-shadow:0 2px 0 #fff}
+.brand-sub{font-size:.75rem;text-transform:uppercase;letter-spacing:.16em;color:var(--muted);font-weight:900}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer}
+.btn{border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--ink);padding:.5em 1.05em;font-weight:800;font-size:.9rem}
+.btn:hover{border-color:var(--muted)}
+.btn.armed{border-color:var(--barn);color:var(--barn);background:#fff0ef}
+.primary{border-radius:999px;border:none;background:var(--sun);color:var(--ink);font-family:var(--display);font-weight:400;letter-spacing:.02em;padding:.55em 1.5em;font-size:1.55rem;box-shadow:0 7px 0 var(--sun-deep),0 12px 24px rgba(60,40,0,.2);transition:transform .08s,box-shadow .08s}
+.primary:active{transform:translateY(5px);box-shadow:0 2px 0 var(--sun-deep),0 4px 10px rgba(60,40,0,.2)}
+.primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+button:focus-visible,.card:focus-visible{outline:3px solid var(--barn);outline-offset:2px}
+h1,h2,p{margin:0}
+.race-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
+@media (max-width:1100px){.race-grid{grid-template-columns:minmax(0,1fr)}}
+.stage{display:flex;flex-direction:column;gap:14px;min-width:0}
+.eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:.78rem;color:var(--muted);font-weight:900}
+.headline{font-family:var(--display);font-weight:400;font-size:clamp(1.7rem,4.4vw,2.9rem);line-height:1.1}
+.headline .who{color:var(--barn)}
+.track-wrap{position:relative;border-radius:22px;overflow:hidden;border:4px solid #fff;background:var(--sky-2);box-shadow:0 18px 40px rgba(50,70,30,.25);min-height:240px}
+#gl canvas{display:block}
+.gl-fail{margin:0;padding:40px 24px;text-align:center;color:var(--muted);font-weight:800}
+.ov{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.ov[hidden]{display:none}
+.ov-count{font-family:var(--display);font-size:clamp(5rem,22vw,14rem);color:#fff;-webkit-text-stroke:3px var(--barn);text-shadow:0 8px 0 rgba(165,43,42,.9),0 14px 30px rgba(0,0,0,.25);line-height:1}
+.pop{animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.ov-banner{place-items:start center;padding-top:14px}
+.ov-banner span{background:#fff;border:4px solid var(--sun);color:var(--barn);font-family:var(--display);font-size:clamp(1.3rem,3.6vw,2.6rem);padding:.2em .9em;border-radius:999px;box-shadow:0 12px 30px rgba(0,0,0,.2);text-align:center;line-height:1.15;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+.ov-banner small{display:block;font-family:var(--body);font-weight:900;font-size:.5em;color:var(--muted)}
+.ov-flash{background:#fff;opacity:0}
+.ov-feed{position:absolute;left:14px;bottom:12px;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:72%}
+.feed-line{background:rgba(255,255,255,.93);color:var(--ink);border-radius:14px;padding:.35em .9em;font-weight:800;font-size:.95rem;box-shadow:0 4px 12px rgba(0,0,0,.12);animation:rise .4s ease-out}
+.feed-line b{color:var(--barn)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.controls{display:flex;flex-direction:column;gap:10px}
+.commentary{font-size:1.2rem;font-weight:800;min-height:1.5em}
+.actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:.9rem;font-weight:800}
+.panel{background:var(--cream);border:2px solid #fff;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0;box-shadow:0 10px 30px rgba(60,70,30,.12)}
+.panel h2{font-family:var(--display);font-weight:400;font-size:1.4rem}
+.lede{color:var(--muted);font-weight:800;font-size:.9rem}
+.cards{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
+.card{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;border-radius:16px;border:3px solid var(--line);background:#fff;padding:10px 8px 8px;text-align:center;cursor:pointer;user-select:none;transition:transform .1s}
+.card:hover{transform:translateY(-2px)}
+.card .face{font-size:2.5rem;line-height:1.1}
+.card .nm{font-weight:900;font-size:1rem}
+.card .kd{font-size:.74rem;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.card .rib{font-size:.85rem;min-height:1.3em;letter-spacing:-.12em;line-height:1.3}
+.card.out{opacity:.45;filter:grayscale(1)}
+.card .heart{position:absolute;top:5px;right:5px;border:none;background:#fff;border-radius:50%;width:30px;height:30px;font-size:1.05rem;line-height:1;opacity:.35;padding:0}
+.card .heart:hover,.card.fav .heart{opacity:1}
+.card.fav{border-color:var(--pink);box-shadow:0 0 0 3px #ffd5e2}
+.card.winner{border-color:var(--sun);box-shadow:0 0 0 4px #ffe9a3}
+.row-between{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.count{color:var(--muted);font-weight:900;font-size:.88rem}
+.link{border:none;background:none;color:var(--muted);text-decoration:underline;padding:0;font-size:.86rem;font-weight:800}
+.link:hover{color:var(--ink)}
+.msg{font-size:.9rem;color:var(--barn);font-weight:800;min-height:1.3em}
+:fullscreen .app{max-width:none;padding:10px 14px}
+/* Day on the Farm: the stage is the show; scene chips sit under it. */
+.stage-wrap{position:relative}
+.caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);margin:0;width:max-content;max-width:88%;background:rgba(255,255,255,.94);border-radius:18px;padding:.3em 1em;font-weight:900;font-size:clamp(1.05rem,2.7vw,1.7rem);line-height:1.25;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.15);pointer-events:none}
+.caption:empty{display:none}
+.caption.pop{animation:rise .4s ease-out}
+.ov-fade{background:#fff;opacity:0;transition:opacity .6s ease}
+.ov-fade.on{opacity:1}
+.ov-start{pointer-events:auto;background:rgba(191,231,255,.5);display:grid;place-content:center;justify-items:center;gap:14px;text-align:center;padding:16px}
+.start-hint{font-weight:900;font-size:1.1rem;background:rgba(255,255,255,.9);border-radius:999px;padding:.25em 1em}
+.scenes{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.chip{display:flex;align-items:center;gap:8px;border-radius:999px;border:3px solid var(--line);background:#fff;padding:.35em 1.05em .35em .7em;font-weight:900;font-size:1.05rem;color:var(--ink)}
+.chip:hover{border-color:var(--muted)}
+.chip:disabled{opacity:.5;cursor:wait}
+.chip .em{font-size:1.7rem;line-height:1}
+.chip.on{border-color:var(--sun);box-shadow:0 0 0 4px #ffe9a3}
+.foot{text-align:center;color:var(--muted);font-weight:800;font-size:.9rem}
+.ov-drops{position:absolute;inset:0;pointer-events:none;opacity:0}
+.ov-drops.show{animation:drops 2.2s ease-out}
+.ov-drops span{position:absolute;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.95),rgba(140,200,255,.6) 45%,rgba(90,160,230,.35));box-shadow:0 2px 6px rgba(0,60,120,.25)}
+@keyframes drops{0%{opacity:0;transform:scale(.5)}12%{opacity:1;transform:scale(1)}70%{opacity:.9;transform:translateY(18px)}100%{opacity:0;transform:translateY(46px)}}
+@media (prefers-reduced-motion: reduce){.ov-drops.show,.caption.pop{animation:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="brand-name">Day on the Farm</div><div class="brand-sub">A little farm show</div></div>
+    <div class="tools">
+      <button type="button" class="btn" id="soundBtn" aria-pressed="true">Sound on</button>
+      <button type="button" class="btn" id="voiceBtn" aria-pressed="true">Voice on</button>
+      <button type="button" class="btn" id="fullBtn">Full screen</button>
+    </div>
+  </header>
+  <div class="track-wrap stage-wrap" id="stageWrap">
+    <div id="gl" role="img" aria-label="The farm"></div>
+    <div class="ov ov-banner" id="bannerOv" hidden><span id="bannerTxt"></span></div>
+    <div class="ov" id="countOv" hidden><div class="ov-count" id="countTxt"></div></div>
+    <div class="ov-drops" id="drops" aria-hidden="true"></div>
+    <p class="caption" id="caption" aria-live="polite"></p>
+    <div class="ov ov-fade" id="fadeOv"></div>
+    <div class="ov ov-start" id="startOv"><button type="button" class="primary" id="startBtn" disabled>Loading the farm…</button><p class="start-hint">Tap any animal to say hello!</p></div>
+  </div>
+  <nav class="scenes" id="scenes" aria-label="Pick a show"></nav>
+  <p class="foot">Tap any animal and it says hello.</p>
+</div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script>
+// If the 3D engine can't download, the module below never runs; show the same message boot() would.
+setTimeout(() => { if (!window.__barnyardBooted) { const h = document.getElementById('gl'); if (h) h.innerHTML = '<p class="gl-fail">The 3D farm could not load. Check the connection and reload.</p>'; } }, 15000);
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+window.__barnyardBooted = true;
+// Keep the original r128 colour handling so the hand-built farm looks the same; revisit when real models land.
+THREE.ColorManagement.enabled = false;
+const $ = id => document.getElementById(id);
+const TAU = Math.PI * 2, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rnd = (a, b) => a + Math.random() * (b - a), pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const ANIMALS = [
+  { id: 'pig', name: 'Wilbur', kind: 'Pig', emoji: '🐷', say: 'Oink oink!', hex: '#f26b93' },
+  { id: 'cow', name: 'Daisy', kind: 'Cow', emoji: '🐮', say: 'Moo!', hex: '#8b5e3c' },
+  { id: 'sheep', name: 'Woolly', kind: 'Sheep', emoji: '🐑', say: 'Baa!', hex: '#5b8fd6' },
+  { id: 'chicken', name: 'Henrietta', kind: 'Chicken', emoji: '🐔', say: 'Bawk bawk!', hex: '#e8702a' },
+  { id: 'horse', name: 'Buttercup', kind: 'Horse', emoji: '🐴', say: 'Neigh!', hex: '#b8860b' },
+  { id: 'goat', name: 'Billy', kind: 'Goat', emoji: '🐐', say: 'Meh-eh-eh!', hex: '#6c7a7d' },
+  { id: 'duck', name: 'Puddles', kind: 'Duck', emoji: '🦆', say: 'Quack quack!', hex: '#2a9d8f' },
+  { id: 'frog', name: 'Hoppy', kind: 'Frog', emoji: '🐸', say: 'Ribbit ribbit!', hex: '#3fa34d' },
+];
+const byId = Object.fromEntries(ANIMALS.map(a => [a.id, a]));
+const KEY = 'day-on-the-farm-v1';
+const S = Object.assign({ sound: true, voice: true }, load());
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* ---------- Audio: recorded animal calls where we have them (sounds/, all CC0), everything else synthesised ---------- */
+let PM = 1; // pitch for synthesised baby voices
+let AC = null, master = null, musicBus = null, sfxBus = null, noiseBuf = null;
+function audio() {
+  if (!AC) {
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      master = AC.createGain(); master.gain.value = S.sound ? 0.8 : 0; master.connect(AC.destination);
+      musicBus = AC.createGain(); musicBus.gain.value = 0.36; musicBus.connect(master);
+      sfxBus = AC.createGain(); sfxBus.gain.value = 0.75; sfxBus.connect(master);
+      decodeSamples();
+      noiseBuf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
+      const ch = noiseBuf.getChannelData(0); for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+    } catch (e) { AC = null; }
+  } else if (AC.state === 'suspended') AC.resume();
+  return !!AC;
+}
+const now = () => AC.currentTime;
+function osc(o) {
+  const t = o.t, g = AC.createGain(), x = AC.createOscillator(), a = o.a || 0.008;
+  x.type = o.type || 'sine'; x.frequency.setValueAtTime(o.f * PM, t); if (o.det) x.detune.value = o.det;
+  if (o.to) x.frequency.exponentialRampToValueAtTime(o.to * PM, t + o.d);
+  if (o.vib) { const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = o.vib.f; lg.gain.value = o.vib.depth; l.connect(lg).connect(x.frequency); l.start(t); l.stop(t + o.d + 0.1); }
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.v, t + a);
+  if (o.hold) { g.gain.setValueAtTime(o.v, t + Math.max(a + 0.001, o.d - 0.05)); g.gain.exponentialRampToValueAtTime(0.0001, t + o.d + 0.03); }
+  else g.gain.exponentialRampToValueAtTime(0.0001, t + o.d);
+  let node = x;
+  if (o.lp) { const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.lp; x.connect(f); node = f; }
+  node.connect(g); g.connect(o.out || sfxBus); x.start(t); x.stop(t + o.d + 0.12);
+}
+function noise(o) {
+  const s = AC.createBufferSource(), fl = AC.createBiquadFilter(), g = AC.createGain(), a = o.a || 0.005;
+  s.buffer = noiseBuf; s.loop = o.d > 0.4;
+  fl.type = o.ft || 'bandpass'; fl.frequency.value = o.f || 1000; fl.Q.value = o.q || 1;
+  g.gain.setValueAtTime(0.0001, o.t); g.gain.exponentialRampToValueAtTime(o.v, o.t + a); g.gain.exponentialRampToValueAtTime(0.0001, o.t + o.d);
+  s.connect(fl).connect(g).connect(o.out || sfxBus); s.start(o.t, Math.random() * 1.5); s.stop(o.t + o.d + 0.05);
+}
+/* animal voices: synthesised fallbacks, used until (or unless) a recording loads */
+const SYNTH = {
+  pig(t, k = 1) { for (const o of [0, .17]) { osc({ f: 230, to: 110, t: t + o, d: .12 * k + .05, v: .2, type: 'sawtooth', lp: 900, a: .01 }); noise({ t: t + o, d: .1, v: .1, f: 600, q: 2 }); } },
+  cow(t, k = 1) { const d = .9 * k; osc({ f: 196, to: 147, t, d, v: .17, type: 'sawtooth', lp: 650, a: .1, hold: 1, vib: { f: 5, depth: 4 } }); osc({ f: 98, to: 73, t, d, v: .09, type: 'square', lp: 350, a: .1, hold: 1 }); },
+  sheep(t, k = 1) { const d = .75 * k; osc({ f: 440, to: 392, t, d, v: .1, type: 'sawtooth', lp: 1500, a: .03, hold: 1, vib: { f: 10, depth: 28 } }); osc({ f: 220, to: 196, t, d, v: .05, type: 'square', lp: 800, a: .03, hold: 1, vib: { f: 10, depth: 14 } }); },
+  goat(t, k = 1) { const d = .55 * k; osc({ f: 560, to: 500, t, d, v: .1, type: 'sawtooth', lp: 2400, a: .02, hold: 1, vib: { f: 15, depth: 50 } }); osc({ f: 280, to: 250, t, d, v: .04, type: 'square', lp: 1200, a: .02, hold: 1, vib: { f: 15, depth: 25 } }); },
+  chicken(t, k = 1) { [0, .12, .24, .42].forEach((o, i) => { const last = i === 3; osc({ f: last ? 1000 : 850, to: last ? 500 : 600, t: t + o, d: last ? .2 : .07, v: .09, type: 'square', lp: 2200, a: .005 }); noise({ t: t + o, d: .05, v: .08, f: 1800, q: 3 }); }); },
+  frog(t, k = 1) { (k < 1 ? [0, .2] : [0, .2, .55, .75]).forEach(o => { osc({ f: 150, to: 120, t: t + o, d: .16, v: .22, type: 'square', lp: 700, a: .008, hold: 1, vib: { f: 42, depth: 30 } }); noise({ t: t + o, d: .12, v: .06, ft: 'lowpass', f: 500 }); }); },
+  duck(t, k = 1) { [0, .24].forEach(o => { osc({ f: 520, to: 380, t: t + o, d: .17, v: .1, type: 'square', lp: 1500, a: .01, hold: 1, vib: { f: 30, depth: 20 } }); noise({ t: t + o, d: .15, v: .05, ft: 'lowpass', f: 1200 }); }); },
+  horse(t, k = 1) { const d = .7 * k; osc({ f: 1150, to: 480, t, d, v: .09, type: 'sawtooth', lp: 3200, a: .02, hold: 1, vib: { f: 14, depth: 60 } }); osc({ f: 575, to: 240, t, d, v: .04, type: 'square', lp: 1600, a: .02, hold: 1, vib: { f: 14, depth: 30 } }); noise({ t: t + d, d: .15, v: .08, ft: 'lowpass', f: 500 }); },
+};
+const SAMPLE_FILES = { pig: '../barnyard-race/sounds/pig-oink.mp3', cow: '../barnyard-race/sounds/cow-moo.mp3', sheep: '../barnyard-race/sounds/sheep-baa.mp3', chicken: '../barnyard-race/sounds/chicken-cluck.mp3' };
+const SAMPLE_VOL = { pig: 1.1, cow: 0.9, sheep: 0.9, chicken: 0.8 };
+const sampleData = {}, samples = {};
+// Fetch the files right away; decoding waits for the AudioContext, which needs a tap first.
+for (const [id, url] of Object.entries(SAMPLE_FILES)) sampleData[id] = fetch(url).then(r => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
+function decodeSamples() {
+  for (const id of Object.keys(SAMPLE_FILES)) {
+    if (samples[id] !== undefined) continue; samples[id] = null;
+    sampleData[id].then(buf => buf && new Promise((ok, no) => AC.decodeAudioData(buf.slice(0), ok, no))).then(b => { if (b) samples[id] = b; }).catch(() => {});
+  }
+}
+// k < 1 is a short call (in songs): play the start and fade it out early.
+function playSample(id, t, k = 1, p = 1) {
+  const b = samples[id], src = AC.createBufferSource(), g = AC.createGain(), d = Math.min(b.duration, b.duration * Math.max(0.45, k) + 0.05), v = SAMPLE_VOL[id] || 1;
+  src.buffer = b; src.playbackRate.value = rnd(0.96, 1.05) * p;
+  g.gain.setValueAtTime(v, t); g.gain.setValueAtTime(v, t + Math.max(0, d - 0.08)); g.gain.linearRampToValueAtTime(0.0001, t + d);
+  src.connect(g).connect(sfxBus); src.start(t); src.stop(t + d + 0.02);
+}
+const CALLS = Object.fromEntries(Object.keys(SYNTH).map(id => [id, (t, k, p = 1) => { if (samples[id]) return playSample(id, t, k, p); PM = p; try { SYNTH[id](t, k); } finally { PM = 1; } }]));
+const SFX = {
+  rooster(t) { let tt = t; for (const [f, d] of [[659, .14], [784, .14], [880, .24], [784, .8]]) { osc({ f, to: d > .5 ? f * .72 : f * 1.02, t: tt, d, v: .12, type: 'sawtooth', lp: 2800, a: .02, hold: 1, vib: d > .5 ? { f: 9, depth: 25 } : null }); tt += d; } },
+  bell(t) { osc({ f: 880, t, d: .35, v: .12, type: 'square', lp: 3000, a: .002 }); osc({ f: 1319, t, d: .25, v: .05, type: 'square', a: .002 }); noise({ t, d: .03, v: .1, f: 4000 }); },
+  go(t) { [523, 659, 784, 1047].forEach((f, i) => osc({ f, t: t + i * .08, d: i === 3 ? .6 : .14, v: .1, type: 'sawtooth', lp: 2500, a: .01, hold: 1 })); },
+  splat(t) { noise({ t, d: .18, v: .25, ft: 'lowpass', f: 600 }); osc({ f: 180, to: 60, t, d: .2, v: .15 }); },
+  splash(t) { noise({ t, d: .3, v: .2, f: 2500, q: .6 }); noise({ t: t + .05, d: .25, v: .12, f: 1200, q: .8 }); },
+  munch(t) { for (let k = 0; k < 3; k++) noise({ t: t + k * .14, d: .06, v: .14, f: 900, q: 3 }); },
+  thud(t) { noise({ t, d: .12, v: .2, ft: 'lowpass', f: 300 }); osc({ f: 120, to: 50, t, d: .15, v: .2 }); },
+  boing(t) { osc({ f: 300, to: 900, t, d: .25, v: .12, type: 'triangle' }); },
+  whoosh(t) { noise({ t, d: .35, v: .15, f: 1500, q: .5 }); },
+  crunch(t) { noise({ t, d: .08, v: .2, f: 2200 }); noise({ t: t + .1, d: .06, v: .12, f: 1600, q: 2 }); },
+  flutter(t) { for (let k = 0; k < 6; k++) noise({ t: t + k * .07, d: .04, v: .05, f: 3000, q: 2 }); },
+  cheer(t) { noise({ t, d: 2.6, v: .12, f: 900, q: .4, a: .3 }); noise({ t: t + .2, d: 2.2, v: .08, f: 2200, q: .6, a: .4 }); },
+  pop(t) { noise({ t, d: .08, v: .2, ft: 'highpass', f: 2000 }); osc({ f: 600, to: 200, t, d: .1, v: .1 }); },
+  win(t) { [[523, 0, .18], [659, .18, .18], [784, .36, .18], [1047, .54, .7]].forEach(([f, o, d]) => { osc({ f, t: t + o, d, v: .09, type: 'sawtooth', lp: 2600, a: .02, hold: 1 }); osc({ f: f / 2, t: t + o, d, v: .04, type: 'square', lp: 1200, a: .02, hold: 1 }); }); },
+};
+const play = (name, extra, p) => { if (!AC) return; const t = now() + 0.02; if (CALLS[name]) CALLS[name](t, extra, p); else if (SFX[name]) SFX[name](t); };
+
+/* songs, written as note:beats. X marks a spot where an animal sings. */
+const SEMI = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
+const hz = n => { const m = /^([A-G]#?)(\d)$/.exec(n); return 440 * Math.pow(2, (SEMI[m[1]] + (+m[2] + 1) * 12 - 69) / 12); };
+function mel(str, kind) {
+  const ev = []; let b = 0;
+  for (const tok of str.trim().split(/\s+/)) { const [n, d] = tok.split(':'); if (n === 'X') ev.push({ b, d: +d, k: 'call' }); else if (n !== 'R') ev.push({ b, d: +d, f: hz(n), k: kind }); b += +d; }
+  return { ev, len: b };
+}
+const SONGS = (() => {
+  const CH = { G: ['G2', 'D3', ['G3', 'B3', 'D4']], C: ['C3', 'G3', ['C4', 'E4', 'G4']], D: ['D3', 'A3', ['D4', 'F#4', 'A4']], F: ['F2', 'C3', ['F3', 'A3', 'C4']] };
+  function accompany(song, bars, st) {
+    bars.forEach((bar, i) => {
+      const b0 = i * 4, parts = bar.split('|');
+      parts.forEach((c, j) => {
+        const b = b0 + j * (4 / parts.length), ch = CH[c];
+        song.ev.push({ b, d: 1, f: hz(ch[0]), k: st.bass }); if (parts.length === 1) song.ev.push({ b: b + 2, d: 1, f: hz(ch[1]), k: st.bass });
+        (parts.length === 1 ? [1, 3] : [1]).forEach(o => ch[2].forEach((nn, k) => song.ev.push({ b: b + o + (st.strum ? k * 0.04 : 0), d: .3, f: hz(nn), k: st.chord })));
+      });
+      if (st.perc) for (let s = 0; s < 8; s++) song.ev.push({ b: b0 + s * .5, d: .05, k: st.perc, v: s % 2 ? 1 : .45 });
+    });
+    song.ev.sort((a, b) => a.b - b.b); return song;
+  }
+  // Old MacDonald Had a Farm
+  const OM = ['G4:1 G4:1 G4:1 D4:1 E4:1 E4:1 D4:2 B4:1 B4:1 A4:1 A4:1 G4:3 D4:1',
+    'G4:1 G4:1 G4:1 D4:1 E4:1 E4:1 D4:2 B4:1 B4:1 A4:1 A4:1 G4:3 D4:.5 D4:.5',
+    'X:1 X:1 G4:1 D4:.5 D4:.5 X:1 X:1 G4:1.5 R:.5',
+    'G4:.5 G4:.5 G4:1 G4:.5 G4:.5 G4:1 G4:.5 G4:.5 G4:.5 G4:.5 X:1 X:1',
+    'G4:1 G4:1 G4:1 D4:1 E4:1 E4:1 D4:2 B4:1 B4:1 A4:1 A4:1 G4:4'].join(' ');
+  const omBars = 'G C G|D G G C G|D G G G G G G C G|D G'.split(' ');
+  const hoedown = accompany(mel(OM.replace(/X:/g, 'G4:'), 'fiddle'), omBars, { bass: 'bass', chord: 'banjo', perc: 'wash', strum: true });
+  const macdonald = accompany(mel(OM, 'toy'), omBars, { bass: 'pbass', chord: 'pluck' });
+  // Mary Had a Little Lamb
+  const mary = accompany(mel('E5:1 D5:1 C5:1 D5:1 E5:1 E5:1 E5:2 D5:1 D5:1 D5:2 E5:1 G5:1 G5:2 E5:1 D5:1 C5:1 D5:1 E5:1 E5:1 E5:1 E5:1 D5:1 D5:1 E5:1 D5:1 C5:4', 'box'), 'C C G C C C G C'.split(' '), { bass: 'pbass', chord: 'pluck' });
+  // Baa Baa Black Sheep
+  const half = 'C5:1 C5:1 G5:1 G5:1 A5:.5 A5:.5 A5:.5 A5:.5 G5:2 F5:1 F5:1 E5:1 E5:1 D5:.5 D5:.5 D5:.5 D5:.5 C5:2';
+  const mid = 'G5:1 G5:.5 G5:.5 F5:1 F5:1 E5:1 E5:.5 E5:.5 D5:2';
+  const baa = accompany(mel([half, mid, mid, half].join(' '), 'box'), 'C F|C F|C G|C C|F C|G C|F C|G C F|C F|C G|C'.split(' '), { bass: 'pbass', chord: 'pluck' });
+  // Twinkle Twinkle Little Star, for bedtime
+  const tw1 = 'C5:1 C5:1 G5:1 G5:1 A5:1 A5:1 G5:2 F5:1 F5:1 E5:1 E5:1 D5:1 D5:1 C5:2', tw2 = 'G5:1 G5:1 F5:1 F5:1 E5:1 E5:1 D5:2';
+  const twinkle = accompany(mel([tw1, tw2, tw2, tw1].join(' '), 'box'), 'C F|C F|C G|C C|F C|G C|F C|G C F|C F|C G|C'.split(' '), { bass: 'pbass', chord: 'pluck' });
+  return { hoedown, macdonald, mary, baa, twinkle };
+})();
+function playEv(e, t, d, out) {
+  switch (e.k) {
+    case 'fiddle': { const dd = Math.max(.1, d * .92); osc({ f: e.f, t, d: dd, v: .06, type: 'sawtooth', lp: 2600, a: .03, hold: 1, det: -5, vib: { f: 6, depth: 5 }, out }); osc({ f: e.f, t, d: dd, v: .045, type: 'sawtooth', lp: 2600, a: .03, hold: 1, det: 6, out }); break; }
+    case 'banjo': osc({ f: e.f, t, d: .22, v: .05, type: 'triangle', lp: 3000, a: .003, out }); osc({ f: e.f * 2, t, d: .1, v: .02, type: 'square', lp: 4000, a: .003, out }); break;
+    case 'bass': osc({ f: e.f, t, d: Math.max(.08, d * .9), v: .2, type: 'triangle', hold: 1, out }); break;
+    case 'wash': noise({ t, d: .04, v: .06 * (e.v || 1), ft: 'highpass', f: 5000, out }); break;
+    case 'toy': osc({ f: e.f * 2, t, d: Math.max(.3, d * .9), v: .11, a: .004, out }); osc({ f: e.f * 6, t, d: .25, v: .02, a: .004, out }); osc({ f: e.f * 4, t, d: .4, v: .03, type: 'triangle', a: .004, out }); break;
+    case 'box': osc({ f: e.f, t, d: 1.1, v: .09, a: .004, out }); osc({ f: e.f * 2.76, t, d: .3, v: .02, a: .004, out }); osc({ f: e.f * 5.4, t, d: .1, v: .006, a: .004, out }); break;
+    case 'pluck': osc({ f: e.f, t, d: .3, v: .035, type: 'triangle', lp: 1800, a: .004, out }); break;
+    case 'pbass': osc({ f: e.f, t, d: .5, v: .12, type: 'triangle', lp: 700, a: .02, out }); break;
+  }
+}
+/* a small look-ahead sequencer whose tempo can change while it plays */
+function Seq(song, bpm, loop, callFn, onEnd) {
+  const out = AC.createGain(); out.connect(musicBus);
+  const tempo = () => (typeof bpm === 'function' ? bpm() : bpm);
+  let i = 0, anchorB = 0, anchorT = AC.currentTime + 0.08, spb = 60 / tempo(), stopped = false, timer = 0;
+  const stop = (fade = 0.1) => {
+    if (stopped) return; stopped = true; clearInterval(timer);
+    const t = AC.currentTime; out.gain.setValueAtTime(out.gain.value, t); out.gain.linearRampToValueAtTime(0, t + fade);
+    setTimeout(() => out.disconnect(), (fade + 1.5) * 1000);
+  };
+  const tick = () => {
+    if (stopped) return;
+    const t0 = AC.currentTime, nt = 60 / tempo();
+    if (Math.abs(nt - spb) > 1e-4) { anchorB += (t0 - anchorT) / spb; anchorT = t0; spb = nt; }
+    for (;;) {
+      if (i >= song.ev.length) { if (!loop) { clearInterval(timer); setTimeout(() => { stop(); onEnd && onEnd(); }, 1800); return; } i = 0; anchorB -= song.len; }
+      const e = song.ev[i], t = anchorT + (e.b - anchorB) * spb;
+      if (t > t0 + 0.25) break;
+      if (t >= t0 - 0.05) { if (e.k === 'call') { callFn && callFn(t); } else playEv(e, t, e.d * spb, out); }
+      i++;
+    }
+  };
+  timer = setInterval(tick, 60); tick();
+  return { stop, get stopped() { return stopped; } };
+}
+let seq = null, idlePick = 0;
+function music(name, bpm, loop, callFn, onEnd) { if (!audio()) return; if (seq) seq.stop(); seq = Seq(SONGS[name], bpm, loop, callFn, onEnd); }
+function stopMusic(fade) { if (seq) seq.stop(fade); seq = null; }
+
+/* ---------- Three.js helpers, shared with the race ---------- */
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const mats = new Map();
+const mat = (color, opts = {}) => { const k = color + JSON.stringify(opts); if (!mats.has(k)) mats.set(k, new THREE.MeshLambertMaterial({ color, ...opts })); return mats.get(k); };
+function mesh(geo, color, opts) { const m = new THREE.Mesh(geo, mat(color, opts)); m.castShadow = true; m.receiveShadow = true; return m; }
+const box = (w, h, d, c, o) => mesh(new THREE.BoxGeometry(w, h, d), c, o);
+const sph = (r, c, o, seg = 12) => mesh(new THREE.SphereGeometry(r, seg, Math.max(6, seg - 4)), c, o);
+const ell = (rx, ry, rz, c, o, seg = 14) => { const m = sph(1, c, o, seg); m.scale.set(rx, ry, rz); return m; };
+const cyl = (r1, r2, h, c, seg = 10, o) => mesh(new THREE.CylinderGeometry(r1, r2, h, seg), c, o);
+const cone = (r, h, c, seg = 8, o) => mesh(new THREE.ConeGeometry(r, h, seg), c, o);
+const grp = (x = 0, y = 0, z = 0, parent) => { const g = new THREE.Group(); g.position.set(x, y, z); if (parent) parent.add(g); return g; };
+const at = (m, x, y, z, parent) => { m.position.set(x, y, z); if (parent) parent.add(m); return m; };
+const noShadow = m => { m.castShadow = false; return m; };
+function canvasTex(w, h, draw) { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; draw(cv.getContext('2d'), w, h); const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; }
+function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function textSprite(text, bg, fg, px = 44, pad = 18, scale = 0.011) {
+  const cv = document.createElement('canvas'), c = cv.getContext('2d'), font = `900 ${px}px Nunito, system-ui, sans-serif`; c.font = font;
+  const w = Math.ceil(c.measureText(text).width) + pad * 2, h = Math.ceil(px + pad * 1.4); cv.width = w; cv.height = h;
+  c.font = font; c.fillStyle = bg; rr(c, 0, 0, w, h, h / 2); c.fill(); c.fillStyle = fg; c.textBaseline = 'middle'; c.textAlign = 'center'; c.fillText(text, w / 2, h / 2 + 2);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false })); sp.scale.set(w * scale, h * scale, 1); sp.userData.base = sp.scale.clone(); sp.userData.ownTex = true; return sp;
+}
+function spriteOf(tex, size, opts = {}) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, ...opts })); sp.scale.set(size, size, 1); return sp; }
+function disposeGroup(g) { g.traverse(o => { if (o.geometry && !o.userData.shared) o.geometry.dispose(); if (o.userData.ownTex && o.material) { o.material.map && o.material.map.dispose(); o.material.dispose(); } }); }
+
+const C = { PIG: 0xf7a8bf, PIG2: 0xe98aa6, COW: 0xf7f3ec, COWB: 0x2a2420, COWP: 0xf0b4b0, WOOL: 0xf4efe4, FACE: 0x3b3330, HEN: 0xfbf8f0, RED: 0xe03a2f, BEAK: 0xf5b32b, HORSE: 0x9c6b3c, HORSE2: 0x4d3118, GOAT: 0xc3c6c8, GOAT2: 0x7d7f82, DUCK: 0xf9d33a, BILL: 0xf08a24, FROG: 0x5cbf3a, FROG2: 0xd8ef9a, FROGD: 0x2f6e1f, HOOF: 0x3a2a1c, EYE: 0x1a1210, WHITE: 0xffffff, WOOD: 0x8a5a2b, FENCE: 0xfdf6ea, BARN: 0xd0403c, HAY: 0xe7c15a };
+
+let TEX = {};
+function buildTextures() {
+  const radial = (stops) => canvasTex(64, 64, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); stops.forEach(([o, col]) => g.addColorStop(o, col)); c.fillStyle = g; c.fillRect(0, 0, w, h); });
+  TEX.puff = radial([[0, 'rgba(255,255,255,.9)'], [0.5, 'rgba(255,255,255,.45)'], [1, 'rgba(255,255,255,0)']]);
+  TEX.sun = radial([[0, 'rgba(255,245,200,1)'], [0.35, 'rgba(255,220,90,.95)'], [0.5, 'rgba(255,200,60,.35)'], [1, 'rgba(255,200,60,0)']]);
+  TEX.cloud = canvasTex(256, 128, (c, w, h) => { c.fillStyle = 'rgba(255,255,255,.96)'; [[64, 80, 36], [110, 60, 46], [160, 72, 40], [200, 86, 30], [120, 90, 44]].forEach(([x, y, r]) => { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); }); });
+  TEX.heart = canvasTex(64, 64, (c) => { c.fillStyle = '#ff4d7a'; c.beginPath(); c.moveTo(32, 58); c.bezierCurveTo(4, 36, 6, 8, 32, 20); c.bezierCurveTo(58, 8, 60, 36, 32, 58); c.fill(); });
+  TEX.star = canvasTex(64, 64, (c) => { c.fillStyle = '#ffd23f'; c.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 11 : 28, a = i * Math.PI / 5 - Math.PI / 2; c.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); } c.closePath(); c.fill(); });
+  TEX.butterfly = canvasTex(64, 64, (c) => { c.fillStyle = '#ff8c42'; [[18, 24, 16, 13], [46, 24, 16, 13], [20, 44, 12, 10], [44, 44, 12, 10]].forEach(([x, y, rx, ry]) => { c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, TAU); c.fill(); }); c.fillStyle = '#7b2cbf'; [[18, 24], [46, 24]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 6, 0, TAU); c.fill(); }); c.fillStyle = '#2b2b2b'; c.fillRect(30, 12, 4, 40); });
+  TEX.apple = canvasTex(64, 64, (c) => { c.fillStyle = '#e23b2e'; c.beginPath(); c.arc(32, 36, 22, 0, TAU); c.fill(); c.fillStyle = '#5a3b1e'; c.fillRect(30, 8, 4, 12); c.fillStyle = '#4caf50'; c.beginPath(); c.ellipse(40, 14, 9, 5, -0.5, 0, TAU); c.fill(); });
+  TEX.moo = canvasTex(256, 128, (c, w, h) => { c.font = '900 72px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 14; c.strokeStyle = '#fff'; c.strokeText('MOO!', w / 2, h / 2); c.fillStyle = '#d7413f'; c.fillText('MOO!', w / 2, h / 2); });
+  TEX.checker = canvasTex(64, 64, (c) => { for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { c.fillStyle = (x + y) % 2 ? '#1d1d1d' : '#fff'; c.fillRect(x * 16, y * 16, 16, 16); } });
+  TEX.checker.wrapS = TEX.checker.wrapT = THREE.RepeatWrapping;
+  const sign = (txt, bg) => canvasTex(512, 96, (c, w, h) => { c.fillStyle = bg; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 24) { c.fillStyle = (x / 24) % 2 ? '#1d1d1d' : '#fff'; c.fillRect(x, 0, 24, 12); c.fillRect(x, h - 12, 24, 12); } c.font = '900 56px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff'; c.fillText(txt, w / 2, h / 2 + 2); });
+  TEX.finish = sign('FINISH', '#d7413f'); TEX.start = sign('START', '#3a7d44');
+  TEX.grass = canvasTex(256, 256, (c, w, h) => { c.fillStyle = '#5fb55a'; c.fillRect(0, 0, w, h); for (let i = 0; i < 1200; i++) { c.fillStyle = Math.random() < 0.5 ? '#54a94f' : '#6dc566'; c.fillRect(Math.random() * w, Math.random() * h, 3, 3); } });
+  TEX.grass.wrapS = TEX.grass.wrapT = THREE.RepeatWrapping; TEX.grass.repeat.set(90, 90);
+  TEX.dirt = canvasTex(256, 256, (c, w, h) => { c.fillStyle = '#c9a26d'; c.fillRect(0, 0, w, h); for (let i = 0; i < 700; i++) { c.fillStyle = Math.random() < 0.5 ? '#bf945e' : '#d4b07c'; c.fillRect(Math.random() * w, Math.random() * h, 4, 3); } });
+  TEX.dirt.wrapS = TEX.dirt.wrapT = THREE.RepeatWrapping; TEX.dirt.repeat.set(14, 3);
+}
+
+/* ---- the farm ---- */
+const world = { trackG: null, clouds: [], blades: null, chicks: [], farmer: null, ribbon: [], tape: -1 };
+function tree(x, z, k = 1) {
+  const g = grp(x, 0, z, scene); g.scale.setScalar(k);
+  at(cyl(0.32, 0.5, 2.6, C.WOOD, 8), 0, 1.3, 0, g);
+  [[0, 3.8, 0, 2.2], [1.2, 3.1, 0.6, 1.5], [-1.1, 3.3, -0.5, 1.6], [0.2, 3.0, -1.2, 1.3]].forEach(([px, py, pz, r]) => at(sph(r, 0x3f9a3b, {}, 12), px, py, pz, g));
+  for (let i = 0; i < 9; i++) { const a = rnd(0, TAU), b = rnd(-0.3, 0.9); at(noShadow(sph(0.17, 0xe23b2e, {}, 7)), Math.cos(a) * 2.1 * Math.cos(b), 3.8 + Math.sin(b) * 2.0, Math.sin(a) * 2.1 * Math.cos(b), g); }
+}
+function hayBale(x, y, z, parent, rot = 0) { const b = cyl(0.8, 0.8, 1.5, C.HAY, 14); b.rotation.z = Math.PI / 2; b.rotation.y = rot; at(b, x, y, z, parent || scene); const band = cyl(0.82, 0.82, 0.18, 0xc69a3a, 14); band.rotation.z = Math.PI / 2; band.rotation.y = rot; at(band, x, y, z, parent || scene); return b; }
+function sunflower(x, z, parent) {
+  const g = grp(x, 0, z, parent); const h = rnd(1.3, 1.8);
+  at(cyl(0.04, 0.05, h, 0x4f8f2f, 6), 0, h / 2, 0, g);
+  const petals = cyl(0.4, 0.4, 0.05, 0xf7c531, 12); petals.rotation.x = Math.PI / 2; at(petals, 0, h, -0.03, g);
+  const disc = cyl(0.24, 0.24, 0.07, 0x6b4a1e, 12); disc.rotation.x = Math.PI / 2; at(disc, 0, h, 0.02, g);
+  for (const s of [-1, 1]) { const leaf = ell(0.25, 0.08, 0.14, 0x4f8f2f); leaf.rotation.z = s * 0.5; at(leaf, s * 0.22, h * 0.5, 0, g); }
+  return g;
+}
+function buildBarn(x, z) {
+  const g = grp(x, 0, z, scene);
+  at(box(14, 7, 11, C.BARN), 0, 3.5, 0, g);
+  at(box(13.6, 2.2, 7.4, C.BARN), 0, 8.1, 0, g); at(box(13.6, 2.0, 4.2, C.BARN), 0, 10.1, 0, g);
+  for (const s of [-1, 1]) {
+    const lo = at(box(15.4, 0.35, 4.4, 0x7d3127), 0, 8.2, s * 4.3, g); lo.rotation.x = s * 1.0;
+    const hi = at(box(15.4, 0.35, 3.4, 0x7d3127), 0, 10.4, s * 1.6, g); hi.rotation.x = s * 0.42;
+  }
+  at(box(15.6, 0.4, 0.7, 0x5e2119), 0, 11.0, 0, g);
+  const door = at(box(5, 5.2, 0.25, 0xb9332f), 0, 2.6, 5.55, g);
+  for (const s of [-1, 1]) { const bar = at(box(0.3, 6.6, 0.1, C.FENCE), 0, 2.6, 5.72, g); bar.rotation.z = s * 0.72; }
+  at(box(5.2, 0.3, 0.1, C.FENCE), 0, 5.15, 5.72, g); for (const s of [-1, 1]) at(box(0.3, 5.3, 0.1, C.FENCE), s * 2.5, 2.6, 5.72, g);
+  at(box(1.8, 1.8, 0.2, C.FENCE), 0, 7.3, 5.4, g); at(box(1.2, 1.2, 0.1, 0x3b2a16), 0, 7.3, 5.52, g);
+  at(box(14.2, 0.3, 11.2, C.FENCE), 0, 0.15, 0, g);
+  at(cyl(0.05, 0.05, 1.4, 0x333, 6), 2, 11.7, 0, g); const vane = at(box(1.1, 0.08, 0.08, 0x333), 2, 12.3, 0, g); at(cone(0.12, 0.4, 0x333, 4), 2.5, 12.3, 0, g).rotation.z = -Math.PI / 2;
+  at(sph(0.16, C.RED, {}, 8), 2, 12.55, 0, g);
+}
+function buildSilo(x, z) { const g = grp(x, 0, z, scene); at(cyl(2.4, 2.4, 12, 0xd9dde0, 18), 0, 6, 0, g); for (const y of [3, 6, 9]) at(cyl(2.45, 2.45, 0.2, 0xb8bec3, 18), 0, y, 0, g); at(sph(2.4, 0xb23a36, {}, 16), 0, 12, 0, g); }
+function buildWindmill(x, z) {
+  const g = grp(x, 0, z, scene); at(cyl(0.6, 1.7, 15, 0x9aa3a8, 6), 0, 7.5, 0, g); at(box(1.6, 1.4, 1.6, 0x6f7a80), 0, 15.3, 0, g);
+  const blades = world.blades = grp(0, 15.3, 1.1, g);
+  for (let i = 0; i < 4; i++) { const b = at(noShadow(box(0.5, 5.2, 0.08, 0xeef1f3)), 0, 2.6, 0, grp(0, 0, 0, blades)); b.parent.rotation.z = i * Math.PI / 2; }
+  at(sph(0.35, 0x444, {}, 8), 0, 15.3, 1.2, g); at(box(2.5, 0.9, 0.08, 0xeef1f3), -1.8, 15.3, 0, g);
+}
+function buildTractor(x, z) {
+  const g = grp(x, 0, z, scene); g.rotation.y = -0.4;
+  at(box(3.4, 1.3, 1.8, C.BARN), 0, 1.6, 0, g); at(box(1.9, 1.1, 1.5, C.BARN), 1.6, 1.5, 0, g); at(box(1.0, 0.9, 1.3, 0xb9332f), -1.0, 2.6, 0, g);
+  at(cyl(0.08, 0.08, 1.5, 0x333, 6), 2.0, 2.8, 0.5, g); const wheel = mesh(new THREE.TorusGeometry(0.38, 0.06, 6, 12), 0x333); wheel.rotation.y = Math.PI / 2; at(wheel, -0.2, 2.6, 0, g);
+  for (const s of [-1, 1]) { const w = cyl(1.3, 1.3, 0.6, 0x2b2b2b, 16); w.rotation.x = Math.PI / 2; at(w, -0.9, 1.3, s * 1.2, g); const hub = cyl(0.55, 0.55, 0.66, 0xf2c23a, 10); hub.rotation.x = Math.PI / 2; at(hub, -0.9, 1.3, s * 1.2, g); const f = cyl(0.7, 0.7, 0.4, 0x2b2b2b, 14); f.rotation.x = Math.PI / 2; at(f, 1.9, 0.7, s * 1.0, g); }
+}
+function buildPond(x, z) {
+  const g = grp(x, 0, z, scene); const w = new THREE.Mesh(new THREE.CircleGeometry(5.5, 28), new THREE.MeshLambertMaterial({ color: 0x56b2e8 })); w.rotation.x = -Math.PI / 2; w.scale.set(1, 0.65, 1); w.position.y = 0.03; w.receiveShadow = true; g.add(w);
+  for (let i = 0; i < 9; i++) { const a = rnd(0, TAU), r = rnd(4.6, 5.8); at(cyl(0.04, 0.05, rnd(1.1, 1.6), 0x4f7f2f, 5), Math.cos(a) * r, 0.7, Math.sin(a) * r * 0.65, g); at(cyl(0.11, 0.11, 0.4, 0x5a3b1e, 6), Math.cos(a) * r, 1.45, Math.sin(a) * r * 0.65, g); }
+  for (let i = 0; i < 4; i++) { const p = new THREE.Mesh(new THREE.CircleGeometry(0.5, 10), mat(0x3f9a3b)); p.rotation.x = -Math.PI / 2; at(p, rnd(-3, 3), 0.05, rnd(-1.5, 1.5), g); }
+}
+function buildScarecrow(x, z) {
+  const g = grp(x, 0, z, scene); at(cyl(0.08, 0.08, 2.8, C.WOOD, 6), 0, 1.4, 0, g); at(box(2.2, 0.1, 0.1, C.WOOD), 0, 2.1, 0, g);
+  at(box(0.9, 1.1, 0.5, 0x3b6fb6), 0, 1.9, 0, g); at(box(1.9, 0.3, 0.3, 0x3b6fb6), 0, 2.1, 0, g); at(sph(0.32, 0xe8c99a, {}, 10), 0, 2.85, 0, g);
+  at(cyl(0.6, 0.6, 0.06, 0xd9b55a, 10), 0, 3.08, 0, g); at(cone(0.42, 0.5, 0xd9b55a, 10), 0, 3.3, 0, g);
+  for (const s of [-1, 1]) at(cone(0.12, 0.35, C.HAY, 6), s * 1.05, 2.1, 0, g).rotation.z = s * Math.PI / 2;
+  at(sph(0.14, 0x222, {}, 7), 0.8, 2.3, 0, g);
+}
+function buildFarmer(x, z, parent) {
+  const g = grp(x, 0, z, parent);
+  for (const s of [-1, 1]) at(cyl(0.14, 0.14, 0.9, 0x3f5fa6, 7), s * 0.18, 0.45, 0, g);
+  at(box(0.74, 0.36, 0.44, C.BARN), 0, 1.62, 0, g); at(box(0.7, 0.75, 0.42, 0x3f5fa6), 0, 1.2, 0, g); for (const s of [-1, 1]) at(box(0.12, 0.5, 0.46, 0x3f5fa6), s * 0.2, 1.68, 0, g);
+  at(sph(0.3, 0xe8c29a, {}, 10), 0, 2.15, 0, g); for (const s of [-1, 1]) at(noShadow(sph(0.04, C.EYE, {}, 5)), s * 0.1, 2.2, 0.27, g);
+  at(cyl(0.56, 0.56, 0.06, 0xe4bd5c, 12), 0, 2.4, 0, g); at(cyl(0.3, 0.34, 0.32, 0xe4bd5c, 12), 0, 2.58, 0, g);
+  const arms = [-1, 1].map(s => { const piv = grp(s * 0.44, 1.78, 0, g); at(cyl(0.08, 0.08, 0.7, C.BARN, 7), 0, -0.35, 0, piv); at(sph(0.1, 0xe8c29a, {}, 6), 0, -0.72, 0, piv); return piv; });
+  at(cyl(0.03, 0.03, 1.5, C.WOOD, 5), 0, -0.3, 0, arms[1]); const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.55), new THREE.MeshLambertMaterial({ map: TEX.checker, side: THREE.DoubleSide })); at(flag, 0.45, 0.2, 0, arms[1]);
+  world.farmer = { g, arms };
+}
+function buildChick(x, z, parent) { const g = grp(x, 0, z, parent); at(sph(0.17, 0xf7d548, {}, 8), 0, 0.17, 0, g); at(sph(0.12, 0xf7d548, {}, 8), 0.1, 0.38, 0, g); at(cone(0.04, 0.1, C.BILL, 5), 0.22, 0.37, 0, g).rotation.z = -Math.PI / 2; at(noShadow(sph(0.025, C.EYE, {}, 4)), 0.17, 0.42, 0.08, g); g.rotation.y = rnd(-0.6, 0.6); world.chicks.push({ g, ph: rnd(0, TAU) }); }
+
+
+/* ---- the animals: each is a little toy built from boxes and spheres, facing +x ---- */
+function eyes(head, x, y, z, r = 0.055) { for (const s of [-1, 1]) { at(noShadow(sph(r, C.WHITE, {}, 7)), x, y, s * z, head); at(noShadow(sph(r * 0.55, C.EYE, {}, 5)), x + r * 0.55, y + r * 0.1, s * (z + r * 0.2), head); } }
+function addLegs(body, spots, o) {
+  const legs = [];
+  spots.forEach(([hx, hz], i) => {
+    const hip = grp(hx, o.hipY, hz, body); at(cyl(o.r, o.r * 0.85, o.upper, o.color, 7), 0, -o.upper / 2, 0, hip);
+    const knee = grp(0, -o.upper, 0, hip); at(cyl(o.r * 0.8, o.r * 0.7, o.lower, o.color2 || o.color, 7), 0, -o.lower / 2, 0, knee);
+    if (o.foot) at(box(o.foot[0], 0.04, o.foot[1], o.hoof), o.foot[0] * 0.25, -o.lower, 0, knee); else at(cyl(o.r * 0.85, o.r, o.r * 1.1, o.hoof, 7), 0, -o.lower, 0, knee);
+    legs.push({ hip, knee, front: hx > 0, off: spots.length === 2 ? i * Math.PI : (hx > 0 ? (hz > 0 ? 1.6 : 2.05) : (hz > 0 ? 0 : 0.45)) });
+  });
+  return legs;
+}
+const BUILD = {
+  pig(b) {
+    at(ell(0.85, 0.56, 0.58, C.PIG), 0, 0.8, 0, b);
+    const h = grp(0.95, 0.95, 0, b); at(sph(0.4, C.PIG, {}, 14), 0, 0, 0, h);
+    const sn = cyl(0.19, 0.21, 0.14, C.PIG2, 12); sn.rotation.z = Math.PI / 2; at(sn, 0.4, -0.06, 0, h);
+    for (const s of [-1, 1]) { at(noShadow(sph(0.035, 0xb85c7a, {}, 5)), 0.47, -0.04, s * 0.07, h); const ear = cone(0.13, 0.32, C.PIG2, 4); ear.rotation.x = s * 0.7; ear.rotation.z = 0.35; at(ear, 0.02, 0.33, s * 0.26, h); }
+    eyes(h, 0.24, 0.12, 0.2, 0.05);
+    const tail = mesh(new THREE.TorusGeometry(0.09, 0.025, 6, 10), C.PIG); tail.rotation.y = Math.PI / 2; at(tail, -0.86, 1.02, 0, b);
+    return { headG: h, legs: addLegs(b, [[0.45, 0.28], [0.45, -0.28], [-0.5, 0.28], [-0.5, -0.28]], { hipY: 0.55, upper: 0.26, lower: 0.24, r: 0.1, color: C.PIG, hoof: C.HOOF }), tail, wings: [] };
+  },
+  cow(b) {
+    at(ell(1.12, 0.64, 0.62, C.COW), 0, 1.14, 0, b);
+    [[0.3, 1.36, 0.56, 0.3, 0.22], [-0.5, 1.1, -0.58, 0.34, 0.26], [-0.25, 1.5, 0.3, 0.26, 0.2], [0.5, 1.0, -0.5, 0.24, 0.18]].forEach(([x, y, z, rx, ry]) => at(noShadow(ell(rx, ry, 0.12, C.COWB)), x, y, z, b));
+    at(ell(0.26, 0.2, 0.24, C.COWP), -0.35, 0.62, 0, b);
+    const neck = cyl(0.24, 0.32, 0.7, C.COW, 9); neck.rotation.z = -0.5; at(neck, 1.0, 1.42, 0, b);
+    const collar = mesh(new THREE.TorusGeometry(0.3, 0.05, 6, 12), C.RED); collar.rotation.y = Math.PI / 2; collar.rotation.x = 0.5; at(collar, 1.08, 1.5, 0, b); at(sph(0.1, 0xf2c23a, {}, 8), 1.2, 1.34, 0, b);
+    const h = grp(1.32, 1.62, 0, b); at(ell(0.38, 0.33, 0.3, C.COW), 0, 0, 0, h); at(ell(0.28, 0.2, 0.27, C.COWP), 0.3, -0.12, 0, h);
+    for (const s of [-1, 1]) { at(noShadow(sph(0.04, 0xb77a7a, {}, 5)), 0.52, -0.1, s * 0.1, h); const horn = cone(0.06, 0.26, 0xe9dcc2, 6); horn.rotation.x = s * -1.0; horn.rotation.z = -0.3; at(horn, -0.02, 0.3, s * 0.2, h); const ear = ell(0.08, 0.15, 0.05, C.COW); ear.rotation.x = s * 1.2; at(ear, -0.08, 0.14, s * 0.38, h); }
+    at(noShadow(ell(0.14, 0.12, 0.05, C.COWB)), 0.08, 0.14, 0.29, h); eyes(h, 0.26, 0.1, 0.2);
+    const tail = grp(-1.1, 1.4, 0, b); at(cyl(0.03, 0.03, 0.8, C.COW, 5), 0, -0.4, 0, tail); at(sph(0.1, C.COWB, {}, 6), 0, -0.82, 0, tail);
+    return { headG: h, legs: addLegs(b, [[0.55, 0.3], [0.55, -0.3], [-0.6, 0.3], [-0.6, -0.3]], { hipY: 0.85, upper: 0.4, lower: 0.38, r: 0.11, color: C.COW, hoof: C.COWB }), tail, wings: [] };
+  },
+  sheep(b) {
+    at(ell(0.82, 0.62, 0.62, C.WOOL), 0, 0.92, 0, b);
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * TAU, e = rnd(-0.4, 0.9); at(sph(rnd(0.22, 0.3), C.WOOL, {}, 9), Math.cos(a) * 0.72 * Math.cos(e), 0.92 + Math.sin(e) * 0.55, Math.sin(a) * 0.52 * Math.cos(e), b); }
+    const h = grp(0.9, 1.08, 0, b); at(ell(0.3, 0.27, 0.25, C.FACE), 0, 0, 0, h); at(sph(0.25, C.WOOL, {}, 9), -0.1, 0.22, 0, h); at(sph(0.17, C.WOOL, {}, 8), 0.08, 0.3, 0.1, h);
+    for (const s of [-1, 1]) { const ear = ell(0.07, 0.15, 0.09, C.FACE); ear.rotation.z = 0.5; ear.rotation.x = s * 0.4; at(ear, -0.02, 0.05, s * 0.3, h); }
+    at(noShadow(sph(0.05, 0xf0a0b0, {}, 6)), 0.3, -0.08, 0, h); eyes(h, 0.2, 0.08, 0.17, 0.05);
+    const tail = at(sph(0.13, C.WOOL, {}, 7), -0.9, 1.05, 0, b);
+    return { headG: h, legs: addLegs(b, [[0.42, 0.26], [0.42, -0.26], [-0.45, 0.26], [-0.45, -0.26]], { hipY: 0.6, upper: 0.3, lower: 0.28, r: 0.07, color: C.FACE, hoof: C.HOOF }), tail, wings: [] };
+  },
+  chicken(b) {
+    at(ell(0.42, 0.38, 0.36, C.HEN), 0, 0.62, 0, b);
+    [[-0.08, 0], [0, 0.1], [0, -0.1]].forEach(([dz, dy], i) => { const f = cone(0.09, 0.45, i ? 0xe8e2d2 : C.HEN, 5); f.rotation.z = 0.95; f.rotation.x = dz * 4; at(f, -0.42, 0.9 + dy, dz, b); });
+    const neck = cyl(0.12, 0.17, 0.32, C.HEN, 8); neck.rotation.z = -0.35; at(neck, 0.3, 0.9, 0, b);
+    const h = grp(0.42, 1.12, 0, b); at(sph(0.22, C.HEN, {}, 12), 0, 0, 0, h);
+    at(cone(0.06, 0.2, C.BEAK, 6), 0.28, -0.02, 0, h).rotation.z = -Math.PI / 2;
+    [[-0.06, 0.22], [0.03, 0.26], [0.11, 0.21]].forEach(([x, y]) => at(noShadow(sph(0.065, C.RED, {}, 7)), x, y, 0, h)); at(noShadow(sph(0.055, C.RED, {}, 6)), 0.2, -0.15, 0, h);
+    eyes(h, 0.14, 0.06, 0.15, 0.04);
+    const wings = [-1, 1].map(s => { const piv = grp(0, 0.75, s * 0.28, b); const w = ell(0.3, 0.15, 0.06, 0xece6d8); at(w, -0.05, -0.1, s * 0.1, piv); return { piv, s }; });
+    return { headG: h, legs: addLegs(b, [[0.05, 0.12], [0.05, -0.12]], { hipY: 0.38, upper: 0.18, lower: 0.17, r: 0.035, color: C.BEAK, hoof: C.BEAK, foot: [0.2, 0.12] }), wings, bird: true };
+  },
+  horse(b) {
+    at(ell(1.15, 0.6, 0.52, C.HORSE), 0, 1.3, 0, b);
+    const neck = cyl(0.22, 0.34, 1.05, C.HORSE, 9); neck.rotation.z = -0.7; at(neck, 0.95, 1.75, 0, b);
+    for (let i = 0; i < 6; i++) at(box(0.14, 0.3, 0.12, C.HORSE2), 0.55 + i * 0.13, 1.78 + i * 0.12, 0, b);
+    const h = grp(1.38, 2.18, 0, b); const head = ell(0.44, 0.27, 0.23, C.HORSE); head.rotation.z = -0.35; at(head, 0, 0, 0, h);
+    at(ell(0.2, 0.17, 0.19, 0xb98b5c), 0.4, -0.18, 0, h); at(noShadow(ell(0.2, 0.09, 0.05, C.WHITE)), 0.18, 0.12, 0.18, h);
+    for (const s of [-1, 1]) { at(cone(0.06, 0.22, C.HORSE, 6), -0.12, 0.3, s * 0.12, h).rotation.x = s * 0.3; at(noShadow(sph(0.035, 0x3a2a1c, {}, 5)), 0.58, -0.2, s * 0.08, h); }
+    eyes(h, 0.12, 0.08, 0.2, 0.05);
+    const tail = grp(-1.15, 1.45, 0, b); const t = ell(0.13, 0.55, 0.13, C.HORSE2); t.rotation.z = 0.5; at(t, -0.15, -0.4, 0, tail);
+    return { headG: h, legs: addLegs(b, [[0.6, 0.26], [0.6, -0.26], [-0.65, 0.26], [-0.65, -0.26]], { hipY: 1.0, upper: 0.5, lower: 0.48, r: 0.09, color: C.HORSE, color2: 0x7a5230, hoof: C.HOOF }), tail, wings: [] };
+  },
+  goat(b) {
+    at(ell(0.85, 0.5, 0.46, C.GOAT), 0, 0.97, 0, b);
+    const neck = cyl(0.16, 0.22, 0.5, C.GOAT, 8); neck.rotation.z = -0.6; at(neck, 0.75, 1.18, 0, b);
+    const collar = mesh(new THREE.TorusGeometry(0.2, 0.04, 6, 12), 0x3b6fb6); collar.rotation.y = Math.PI / 2; collar.rotation.x = 0.6; at(collar, 0.85, 1.25, 0, b); at(sph(0.07, 0xf2c23a, {}, 7), 0.95, 1.12, 0, b);
+    const h = grp(1.0, 1.4, 0, b); at(ell(0.32, 0.27, 0.23, C.GOAT), 0, 0, 0, h);
+    at(cone(0.07, 0.26, 0xf2f0ea, 6), 0.2, -0.32, 0, h).rotation.z = Math.PI;
+    for (const s of [-1, 1]) { const horn = cone(0.05, 0.4, 0x6b5a46, 6); horn.rotation.z = 0.95; horn.rotation.x = s * 0.25; at(horn, -0.1, 0.3, s * 0.1, h); const ear = ell(0.06, 0.17, 0.09, C.GOAT2); ear.rotation.z = 0.9; ear.rotation.x = s * 0.5; at(ear, -0.05, 0.05, s * 0.3, h); }
+    at(noShadow(sph(0.05, 0x5a4a44, {}, 6)), 0.33, -0.06, 0, h); eyes(h, 0.2, 0.08, 0.18, 0.05);
+    const tail = at(cone(0.06, 0.25, C.GOAT, 5), -0.85, 1.22, 0, b); tail.rotation.z = 0.6;
+    return { headG: h, legs: addLegs(b, [[0.45, 0.22], [0.45, -0.22], [-0.5, 0.22], [-0.5, -0.22]], { hipY: 0.7, upper: 0.35, lower: 0.33, r: 0.065, color: C.GOAT, hoof: C.HOOF }), tail, wings: [] };
+  },
+  duck(b) {
+    at(ell(0.5, 0.33, 0.33, C.DUCK), 0, 0.48, 0, b);
+    const tail = ell(0.16, 0.1, 0.12, C.DUCK); tail.rotation.z = 0.6; at(tail, -0.5, 0.65, 0, b);
+    const neck = cyl(0.1, 0.14, 0.26, C.DUCK, 8); neck.rotation.z = -0.3; at(neck, 0.34, 0.72, 0, b);
+    const h = grp(0.44, 0.9, 0, b); at(sph(0.21, C.DUCK, {}, 12), 0, 0, 0, h); at(ell(0.17, 0.05, 0.12, C.BILL), 0.3, -0.04, 0, h); eyes(h, 0.13, 0.07, 0.15, 0.04);
+    const wings = [-1, 1].map(s => { const piv = grp(0, 0.58, s * 0.27, b); at(ell(0.32, 0.1, 0.05, 0xf0c52c), -0.05, -0.08, s * 0.08, piv); return { piv, s }; });
+    return { headG: h, legs: addLegs(b, [[0.02, 0.12], [0.02, -0.12]], { hipY: 0.26, upper: 0.12, lower: 0.11, r: 0.03, color: C.BILL, hoof: C.BILL, foot: [0.2, 0.16] }), wings, tail, bird: true };
+  },
+};
+BUILD.frog = function (b) {
+  at(ell(0.55, 0.32, 0.5, C.FROG), 0, 0.42, 0, b); at(noShadow(ell(0.44, 0.2, 0.42, C.FROG2)), 0.1, 0.32, 0, b);
+  for (const [x, z, r] of [[-0.2, 0.22, 0.07], [0.05, -0.25, 0.06], [-0.3, -0.1, 0.05]]) at(noShadow(sph(r, C.FROGD, {}, 6)), x, 0.72, z, b);
+  const h = grp(0.42, 0.62, 0, b); at(ell(0.3, 0.2, 0.38, C.FROG), 0, 0, 0, h);
+  for (const s of [-1, 1]) { at(sph(0.13, C.FROG, {}, 10), 0.02, 0.17, s * 0.2, h); at(noShadow(sph(0.1, C.WHITE, {}, 8)), 0.08, 0.2, s * 0.21, h); at(noShadow(sph(0.055, C.EYE, {}, 6)), 0.16, 0.21, s * 0.22, h); at(noShadow(sph(0.045, 0xff8fb1, {}, 6)), 0.22, -0.04, s * 0.25, h); }
+  const smile = mesh(new THREE.TorusGeometry(0.2, 0.02, 5, 12, Math.PI), C.FROGD); smile.rotation.set(0, Math.PI / 2, Math.PI); at(noShadow(smile), 0.26, 0.02, 0, h);
+  return { headG: h, legs: addLegs(b, [[0.3, 0.26], [0.3, -0.26], [-0.32, 0.36], [-0.32, -0.36]], { hipY: 0.3, upper: 0.16, lower: 0.15, r: 0.06, color: C.FROG, hoof: C.FROG2, foot: [0.24, 0.2] }), wings: [], hopper: true, signH: 1.9 };
+};
+
+/* ---- real animals: rigged, animated glTF models (all CC0, see CREDITS.md). Any that fail to load keep the toy above. ---- */
+// h = height in track units, roughly the toy's; idle and run are clip names; rate speeds up the run clip.
+const MODELS = {
+  pig: { file: '../barnyard-race/models/Pig.glb', h: 1.5, idle: 'Armature|Idle', run: 'Armature|Jump', rate: 1.25 },
+  cow: { file: '../barnyard-race/models/Cow.glb', h: 2.2, idle: 'Armature|Idle', run: 'Armature|Run', rate: 1 },
+  sheep: { file: '../barnyard-race/models/Sheep.glb', h: 1.6, idle: 'Armature|Idle', run: 'Armature|Jump', rate: 1.3 },
+  horse: { file: '../barnyard-race/models/Horse.glb', h: 2.6, idle: 'Armature|Idle', run: 'Armature|Run', rate: 1 },
+};
+const loaded = {};
+function prepModel(gltf, m) {
+  const root = gltf.scene, clip = c => THREE.AnimationClip.findByName(gltf.animations, c);
+  // Lambert like the rest of the farm; colours are converted so they sit with the hand-picked hex colours (colour management is off).
+  const toLambert = q => { const l = new THREE.MeshLambertMaterial({ color: q.color.clone().convertLinearToSRGB(), map: q.map || null, transparent: q.transparent, opacity: q.opacity }); if (l.map) l.map.colorSpace = THREE.NoColorSpace; return l; };
+  root.traverse(o => { if (!o.isMesh) return; o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; o.userData.shared = true; o.material = Array.isArray(o.material) ? o.material.map(toLambert) : toLambert(o.material); });
+  const idle = clip(m.idle), run = clip(m.run);
+  // Measure in the idle pose, then scale to height h, stand on y = 0, and centre on the origin.
+  const mx = new THREE.AnimationMixer(root); mx.clipAction(idle).play(); mx.update(0); root.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(root, true), size = bb.getSize(V(0, 0, 0)), c = bb.getCenter(V(0, 0, 0)); mx.stopAllAction();
+  return { root, idle, run, rate: m.rate, k: m.h / size.y, c, size, yaw: m.yaw ?? Math.PI / 2 };
+}
+function loadModels() {
+  const loader = new GLTFLoader();
+  return Promise.all(Object.entries(MODELS).map(([id, m]) => loader.loadAsync(m.file).then(g => { loaded[id] = prepModel(g, m); }).catch(e => console.warn(`Kept the toy ${id}: ${e.message || e}`))));
+}
+function buildModel(id, b) {
+  const M = loaded[id], holder = grp(0, 0, 0, b), inst = SkeletonUtils.clone(M.root);
+  holder.rotation.y = M.yaw; holder.scale.setScalar(M.k); holder.position.y = -M.c.y * M.k + M.size.y * M.k / 2;
+  inst.position.set(-M.c.x, 0, -M.c.z); holder.add(inst);
+  const mixer = new THREE.AnimationMixer(inst), idle = mixer.clipAction(M.idle), run = mixer.clipAction(M.run);
+  idle.time = rnd(0, M.idle.duration); idle.play();
+  const len = Math.max(M.size.x, M.size.z) * M.k, h = M.size.y * M.k, headG = grp(len * 0.4, h * 0.85, 0, b);
+  return { headG, legs: [], wings: [], mixer, acts: { idle, run }, cur: idle, rate: M.rate, signH: Math.max(2.0, h + 0.9) };
+}
+
+/* particles */
+const bitPool = [];
+function burst(pos, colors, count, speed, up) {
+  for (let i = 0; i < count; i++) {
+    let b = bitPool.find(b => !b.m.visible);
+    if (!b) { if (bitPool.length > 180) break; const m = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.14), mat(0xffffff)); m.castShadow = false; scene.add(m); b = { m, v: V(0, 0, 0), life: 0 }; bitPool.push(b); }
+    b.m.material = mat(pick(colors)); b.m.position.copy(pos); b.m.visible = true; b.v.set(rnd(-1, 1) * speed, rnd(0.5, 1) * up, rnd(-1, 1) * speed); b.life = rnd(0.5, 1.0); b.m.scale.setScalar(rnd(0.6, 1.4));
+  }
+}
+function stepBits(dt) { for (const b of bitPool) { if (!b.m.visible) continue; b.life -= dt; b.v.y -= 14 * dt; b.m.position.addScaledVector(b.v, dt); b.m.rotation.x += dt * 6; b.m.rotation.z += dt * 4; if (b.m.position.y < 0.06 && b.v.y < 0) { b.m.position.y = 0.06; b.v.multiplyScalar(0.3); b.v.y = Math.abs(b.v.y) * 0.3; } if (b.life <= 0) b.m.visible = false; } }
+const puffPool = [];
+function puff(pos) {
+  let p = puffPool.find(p => !p.sp.visible);
+  if (!p) { if (puffPool.length > 60) return; const sp = spriteOf(TEX.puff, 1, { color: 0xd9c4a0, opacity: 0.5 }); scene.add(sp); p = { sp, t: 0 }; puffPool.push(p); }
+  p.sp.position.copy(pos); p.sp.visible = true; p.t = 0;
+}
+function stepPuffs(dt) { for (const p of puffPool) { if (!p.sp.visible) continue; p.t += dt; const k = p.t / 0.7; if (k >= 1) { p.sp.visible = false; continue; } p.sp.scale.setScalar(0.5 + k * 1.2); p.sp.material.opacity = 0.45 * (1 - k); p.sp.position.y += dt * 0.6; } }
+
+/* ---------- Day on the Farm: one farm, five little shows for watching ---------- */
+const glHost = $('gl'), stageWrap = $('stageWrap');
+let renderer, scene, camera, sun, hemi, W = 0, H = 0, real = 0, time = 0;
+const MUSIC_VOL = 0.22;
+const BARN = { x: -14, z: -16 }, DOOR = { x: -14, z: -10.1 }, POND = { x: 22, z: -2, rx: 6, rz: 4.2 }, MUD = { x: 10, z: 10, r: 3 }, PEN = { x0: -27, x1: -18, z0: 5, z1: 15 };
+const SLOT_X = i => -12 + i * 3.1, TROUGH_Z = -2, FEED_Z = -4.6, FACE_CAM = -Math.PI / 2;
+const faceDir = (dx, dz) => Math.atan2(-dz, dx);
+const turnAngle = (from, to, k) => { const d = ((to - from + Math.PI) % TAU + TAU) % TAU - Math.PI; return from + d * Math.min(1, k); };
+const WORDS = { pig: 'Oink!', cow: 'Moo!', sheep: 'Baa!', chicken: 'Bawk!', horse: 'Neigh!', goat: 'Meh-eh!', duck: 'Quack!', frog: 'Ribbit!', chick: 'Peep!', farmer: 'Hello!' };
+const NUM = ['', 'One!', 'Two!', 'Three!', 'Four!', 'Five!', 'Six!', 'Seven!'];
+SFX.blip = t => osc({ f: 700, to: 1200, t, d: 0.08, v: 0.04 });
+SFX.buzz = t => osc({ f: 220, t, d: 0.5, v: 0.025, type: 'sawtooth', lp: 900, vib: { f: 30, depth: 40 } });
+
+/* ---- the show's farm ---- */
+function buildFarm() {
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), new THREE.MeshLambertMaterial({ map: TEX.grass })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+  [[-150, -110, 70, 18], [-60, -135, 90, 24], [40, -125, 80, 20], [150, -110, 70, 16], [-150, 110, 60, 14], [120, 130, 80, 18]].forEach(([x, z, r, h]) => { const m = ell(r, h, r * 0.6, 0x4e9c49); m.position.set(x, -1, z); m.castShadow = false; scene.add(m); });
+  buildBarn(BARN.x, BARN.z); buildSilo(-26, -17); buildWindmill(32, -38); buildTractor(36, -16); buildScarecrow(-2, 26);
+  [[-40, -14, 1.1], [-6, -27, 1.2], [44, -4, 1], [52, -22, 1.3], [-44, 18, 1.1], [46, 26, 1.2], [18, -30, 1], [-32, 34, 1.4], [10, 38, 1.3], [30, 22, 1.1]].forEach(([x, z, k]) => tree(x, z, k));
+  hayBale(-24, 0.8, -6, null, 0.3); hayBale(-22.4, 0.8, -6, null, 0.3); hayBale(-23.2, 2.3, -6, null, 0.3); hayBale(13, 0.8, 4.2); hayBale(-11, 0.8, 19.6, null, 0.2);
+  // pond with lily pads
+  const pg = grp(POND.x, 0, POND.z, scene);
+  const water = new THREE.Mesh(new THREE.CircleGeometry(1, 36), new THREE.MeshLambertMaterial({ color: 0x56b2e8 })); water.rotation.x = -Math.PI / 2; water.scale.set(POND.rx, POND.rz, 1); water.position.y = 0.03; water.receiveShadow = true; pg.add(water);
+  for (let i = 0; i < 12; i++) { const a = rnd(0, TAU), x = Math.cos(a) * (POND.rx + rnd(0.1, 0.7)), z = Math.sin(a) * (POND.rz + rnd(0.1, 0.6)); if (z > 2.5) continue; at(cyl(0.04, 0.05, rnd(1.1, 1.6), 0x4f7f2f, 5), x, 0.7, z, pg); at(cyl(0.11, 0.11, 0.4, 0x5a3b1e, 6), x, 1.45, z, pg); }
+  world.pads = [[-3.4, -1.3], [-1, 1.7], [2.2, -1.6], [3.9, 1.1]].map(([x, z]) => { const p = new THREE.Mesh(new THREE.CircleGeometry(0.75, 14, 0.4, TAU - 0.8), mat(0x3f9a3b)); p.rotation.x = -Math.PI / 2; at(p, x, 0.05, z, pg); p.receiveShadow = true; return { x: POND.x + x, z: POND.z + z }; });
+  // feeding troughs
+  const tg = world.troughs = grp(0, 0, 0, scene);
+  for (let i = 0; i < 8; i++) { at(box(2.2, 0.5, 0.9, C.WOOD), SLOT_X(i), 0.35, TROUGH_Z, tg); at(noShadow(box(2.0, 0.04, 0.7, 0x4a3218)), SLOT_X(i), 0.61, TROUGH_Z, tg); for (const s of [-1, 1]) at(box(0.12, 0.4, 0.8, 0x6e4721), SLOT_X(i) + s * 0.9, 0.2, TROUGH_Z, tg); }
+  // the mud puddle
+  const mud = new THREE.Mesh(new THREE.CircleGeometry(MUD.r, 26), mat(0x5c3b1f)); mud.rotation.x = -Math.PI / 2; mud.scale.set(1.3, 0.85, 1); at(mud, MUD.x, 0.04, MUD.z, scene); mud.receiveShadow = true;
+  for (let i = 0; i < 8; i++) { const a = rnd(0, TAU); at(noShadow(ell(rnd(0.3, 0.6), 0.1, rnd(0.3, 0.5), 0x4e3119)), MUD.x + Math.cos(a) * MUD.r * 1.25, 0.05, MUD.z + Math.sin(a) * MUD.r * 0.8, scene); }
+  // the sheep pen
+  const pen = grp(0, 0, 0, scene), { x0, x1, z0, z1 } = PEN;
+  const rail = (ax, az, bx, bz) => { const len = Math.hypot(bx - ax, bz - az); for (let s = 0; s <= len + 0.01; s += 1.5) at(box(0.18, 1.3, 0.18, C.FENCE), ax + (bx - ax) * s / len, 0.65, az + (bz - az) * s / len, pen); [0.55, 1.05].forEach(y => { const r = at(box(len, 0.12, 0.08, C.FENCE), (ax + bx) / 2, y, (az + bz) / 2, pen); r.rotation.y = -Math.atan2(bz - az, bx - ax); }); };
+  rail(x0, z0, x1, z0); rail(x1, z0, x1, z1); rail(x1, z1, x0, z1); rail(x0, z1, x0, z0);
+  for (let i = 0; i < 10; i++) sunflower(rnd(-6, 8), rnd(28, 31), scene);
+  // sky things: clouds, sun, moon, stars
+  for (let i = 0; i < 9; i++) { const sp = spriteOf(TEX.cloud, 1, { fog: false, opacity: 0.95 }); sp.scale.set(rnd(16, 26), rnd(8, 12), 1); sp.position.set(rnd(-140, 140), rnd(26, 44), rnd(-70, -130)); scene.add(sp); world.clouds.push(sp); }
+  world.sunSp = spriteOf(TEX.sun, 34, { fog: false, depthWrite: false }); world.sunSp.position.set(-80, 62, -150); scene.add(world.sunSp);
+  const moonTex = canvasTex(128, 128, (c, w) => { const g = c.createRadialGradient(64, 64, 20, 64, 64, 64); g.addColorStop(0, 'rgba(255,250,220,1)'); g.addColorStop(0.45, 'rgba(255,248,210,1)'); g.addColorStop(0.5, 'rgba(255,240,180,.35)'); g.addColorStop(1, 'rgba(255,240,180,0)'); c.fillStyle = g; c.fillRect(0, 0, w, w); c.fillStyle = 'rgba(220,210,170,.6)'; [[52, 50, 7], [76, 70, 9], [60, 80, 5]].forEach(([x, y, r]) => { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); }); });
+  world.moon = spriteOf(moonTex, 26, { fog: false, opacity: 0 }); world.moon.position.set(50, 58, -150); scene.add(world.moon);
+  const N = 320, sp = new Float32Array(N * 3); for (let i = 0; i < N; i++) sp.set([rnd(-260, 260), rnd(25, 120), rnd(-120, -220)], i * 3);
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  world.stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xfff8d0, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, fog: false })); scene.add(world.stars);
+  // warm light in the barn door and window at bedtime
+  const glowMat = new THREE.MeshBasicMaterial({ color: 0xffcf6b, transparent: true, opacity: 0, fog: false });
+  world.doorGlow = at(new THREE.Mesh(new THREE.PlaneGeometry(5, 5.2), glowMat), BARN.x, 2.6, BARN.z + 5.82, scene); world.winGlow = at(new THREE.Mesh(new THREE.PlaneGeometry(1.25, 1.25), glowMat), BARN.x, 7.3, BARN.z + 5.6, scene);
+  world.lamp = new THREE.PointLight(0xffc56b, 0, 26); world.lamp.position.set(DOOR.x, 3, DOOR.z + 2.5); scene.add(world.lamp);
+}
+const SKY = { day: new THREE.Color(0x9fd9ff), dusk: new THREE.Color(0xf4a46c), night: new THREE.Color(0x1d2552) }, tmpC = new THREE.Color(), SUNC = new THREE.Color(0xfff4dc), NIGHTC = new THREE.Color(0x9db0ff);
+function setSky(k) {
+  const c = k < 0.5 ? tmpC.copy(SKY.day).lerp(SKY.dusk, k * 2) : tmpC.copy(SKY.dusk).lerp(SKY.night, k * 2 - 1);
+  scene.background.copy(c); scene.fog.color.copy(c);
+  hemi.intensity = 0.75 - 0.45 * k; sun.intensity = 1 - 0.75 * k; sun.color.copy(SUNC).lerp(NIGHTC, k);
+  const night = clamp(k * 2 - 1, 0, 1); world.moon.material.opacity = night; world.stars.material.opacity = night; world.sunSp.material.opacity = 1 - k;
+  world.clouds.forEach(cl => (cl.material.opacity = 0.95 * (1 - 0.75 * k)));
+}
+function setGlow(k) { world.doorGlow.material.opacity = 0.95 * k; world.lamp.intensity = 1.3 * k; }
+
+/* ---- the cast: the farmer, the racers and their babies ---- */
+BUILD.farmer = function (b) {
+  const f = grp(0, 0, 0, b); f.rotation.y = Math.PI / 2; // built facing +z, turned to face +x like the animals
+  const legs = [-1, 1].map(s => { const hip = grp(s * 0.18, 0.9, 0, f); at(cyl(0.14, 0.14, 0.9, 0x3f5fa6, 7), 0, -0.45, 0, hip); at(box(0.22, 0.12, 0.36, 0x5a3b1e), 0, -0.88, 0.06, hip); return hip; });
+  at(box(0.74, 0.36, 0.44, C.BARN), 0, 1.62, 0, f); at(box(0.7, 0.75, 0.42, 0x3f5fa6), 0, 1.2, 0, f); for (const s of [-1, 1]) at(box(0.12, 0.5, 0.46, 0x3f5fa6), s * 0.2, 1.68, 0, f);
+  const h = grp(0, 2.15, 0, f); at(sph(0.3, 0xe8c29a, {}, 10), 0, 0, 0, h); for (const s of [-1, 1]) at(noShadow(sph(0.04, C.EYE, {}, 5)), s * 0.1, 0.05, 0.27, h); at(noShadow(ell(0.1, 0.035, 0.03, 0xb5653f)), 0, -0.1, 0.28, h);
+  at(cyl(0.56, 0.56, 0.06, 0xe4bd5c, 12), 0, 0.25, 0, h); at(cyl(0.3, 0.34, 0.32, 0xe4bd5c, 12), 0, 0.43, 0, h);
+  const arms = [-1, 1].map(s => { const piv = grp(s * 0.44, 1.78, 0, f); at(cyl(0.08, 0.08, 0.7, C.BARN, 7), 0, -0.35, 0, piv); at(sph(0.1, 0xe8c29a, {}, 6), 0, -0.72, 0, piv); return piv; });
+  const bucket = grp(0, -0.85, 0.05, arms[1]); at(cyl(0.2, 0.15, 0.32, 0x9aa3a8, 10), 0, -0.12, 0, bucket); at(noShadow(cyl(0.17, 0.17, 0.02, C.HAY, 10)), 0, 0.04, 0, bucket);
+  const hose = grp(0, -0.75, 0.05, arms[0]); const hs = cyl(0.05, 0.05, 0.55, 0x3a9d3a, 6); hs.rotation.x = Math.PI / 2; at(hs, 0, 0, 0.22, hose); const tip = grp(0, 0, 0.55, hose);
+  return { headG: h, legs: [], wings: [], farmer: { legs, arms, bucket, hose, tip } };
+};
+BUILD.chick = function (b) {
+  at(sph(0.32, 0xf7d548, {}, 12), 0, 0.42, 0, b);
+  const h = grp(0.22, 0.8, 0, b); at(sph(0.24, 0xf7d548, {}, 12), 0, 0, 0, h); at(cone(0.07, 0.18, C.BILL, 6), 0.27, -0.03, 0, h).rotation.z = -Math.PI / 2; eyes(h, 0.16, 0.06, 0.13, 0.045);
+  const wings = [-1, 1].map(s => { const piv = grp(0, 0.5, s * 0.3, b); at(ell(0.18, 0.1, 0.05, 0xf0c52c), -0.03, -0.05, s * 0.03, piv); return { piv, s }; });
+  return { headG: h, legs: addLegs(b, [[0.03, 0.12], [0.03, -0.12]], { hipY: 0.16, upper: 0.08, lower: 0.08, r: 0.03, color: C.BEAK, hoof: C.BEAK, foot: [0.16, 0.1] }), wings, bird: true };
+};
+const actors = [], cast = {};
+function makeActor(id, o = {}) {
+  const root = grp(0, 0, 0, scene), g = grp(0, 0, 0, root), bodyG = grp(0, 0, 0, g);
+  g.scale.setScalar(o.scale || 1);
+  const parts = loaded[id] ? buildModel(id, bodyG) : BUILD[id](bodyG);
+  const a = { id, name: o.name || '', baby: !!o.baby, scale: o.scale || 1, voice: o.voice || id, pitch: o.baby ? 1.45 : 1, root, g, bodyG, parts, heading: 0, face: null, v: 0, speed: 2.6, gait: rnd(0, TAU), seed: Math.random(), target: null, leap: null, lift: 0, lean: 0, munch: false, hosing: false, waving: false, intoBarn: false, hopT0: -9, rollT0: -9, shakeT0: -9, pourT0: -9, flapT0: -9, happyT0: -9, lastTap: -9, mats: null };
+  root.traverse(m => (m.userData.actor = a)); root.visible = false; actors.push(a); return a;
+}
+// Mud needs its own materials so only the piggies get muddy.
+function ownMaterials(a) {
+  a.mats = [];
+  a.bodyG.traverse(o => { if (!o.isMesh) return; const one = m => { const c = m.clone(); a.mats.push({ m: c, base: c.color.clone() }); return c; }; o.material = Array.isArray(o.material) ? o.material.map(one) : one(o.material); });
+}
+const MUDC = new THREE.Color(0x6e4524);
+function setMud(a, k) { for (const { m, base } of a.mats) m.color.copy(base).lerp(MUDC, k * 0.85); a.mud = k; }
+function buildCast() {
+  cast.farmer = makeActor('farmer', { name: 'Farmer' });
+  for (const an of ANIMALS) cast[an.id] = makeActor(an.id, { name: an.name });
+  cast.flock = [0, 1, 2, 3].map(() => makeActor('sheep', { name: 'Sheep' }));
+  cast.piglets = [0, 1].map(() => makeActor('pig', { scale: 0.5, baby: true, name: 'Piglet' }));
+  cast.calf = makeActor('cow', { scale: 0.55, baby: true, name: 'Calf' });
+  cast.lamb = makeActor('sheep', { scale: 0.55, baby: true, name: 'Lamb' });
+  cast.chick = makeActor('chick', { scale: 0.6, baby: true, voice: 'chicken', name: 'Chick' }); cast.chick.pitch = 1.8;
+  cast.duckling = makeActor('duck', { scale: 0.5, baby: true, name: 'Duckling' });
+  cast.froglet = makeActor('frog', { scale: 0.55, baby: true, name: 'Froglet' });
+  [cast.pig, ...cast.piglets].forEach(ownMaterials);
+}
+
+/* ---- moving and acting ---- */
+let gen = 0, waits = [], tickers = [];
+const wait = s => new Promise(r => waits.push({ t: time + s, r, g: gen }));
+function stepWaits() { for (let i = waits.length - 1; i >= 0; i--) { const w = waits[i]; if (w.g !== gen) waits.splice(i, 1); else if (time >= w.t) { waits.splice(i, 1); w.r(); } } }
+function tick(fn) { tickers.push({ fn, g: gen }); }
+function stepTickers(dt) { tickers = tickers.filter(t => t.g === gen && t.fn(dt) !== false); }
+function tween(dur, fn) { return new Promise(r => { const t0 = time; tick(() => { const k = clamp((time - t0) / dur, 0, 1); fn(k); if (k >= 1) { r(); return false; } }); }); }
+function every(sec, dur, fn) { const t0 = time; let next = time; tick(() => { if (time - t0 > dur) return false; if (time >= next) { next += sec; fn(); } }); }
+function place(a, x, z, face = FACE_CAM) { a.root.position.set(x, 0, z); a.root.visible = true; a.target = a.leap = null; a.v = 0; a.lift = 0; a.heading = a.face = face; }
+function walkTo(a, x, z, speed = 2.6) { a.face = null; return new Promise(r => { a.target = { x, z, r, g: gen }; a.speed = speed; }); }
+function leapTo(a, x, z, h = 1.5, dur = 1.0) { a.face = null; return new Promise(r => { const p = a.root.position; a.heading = faceDir(x - p.x, z - p.z); a.leap = { x0: p.x, z0: p.z, x1: x, z1: z, h, dur, t0: time, r, g: gen }; }); }
+const posOf = a => a.root.position;
+function lookAt(a, b) { const p = posOf(a), q = posOf(b); a.face = faceDir(q.x - p.x, q.z - p.z); }
+function headPos(a) { const v = V(0, 0, 0); a.parts.headG.getWorldPosition(v); return v; }
+
+const wordCache = {};
+function wordTex(word) {
+  return wordCache[word] || (wordCache[word] = canvasTex(256, 128, (c, w, h) => { c.fillStyle = '#fff'; rr(c, 8, 10, w - 16, h - 34, 38); c.fill(); c.beginPath(); c.moveTo(w / 2 - 16, h - 26); c.lineTo(w / 2, h - 4); c.lineTo(w / 2 + 16, h - 26); c.fill(); c.font = '900 54px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#d7413f'; c.fillText(word, w / 2, (h - 24) / 2 + 8); }));
+}
+const floats = [];
+function floatUp(tex, pos, w, h, life = 1.6, rise = 1.1) { const sp = spriteOf(tex, 1, { depthTest: false }); sp.scale.set(w, h, 1); sp.position.copy(pos); sp.renderOrder = 5; scene.add(sp); floats.push({ sp, t0: time, life, rise, w, h }); }
+function stepFloats(dt) {
+  for (let i = floats.length - 1; i >= 0; i--) {
+    const f = floats[i], k = (time - f.t0) / f.life;
+    if (k >= 1) { scene.remove(f.sp); f.sp.material.dispose(); floats.splice(i, 1); continue; }
+    f.sp.position.y += dt * f.rise; f.sp.material.opacity = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3; const s = 0.6 + Math.min(1, k * 5) * 0.4; f.sp.scale.set(f.w * s, f.h * s, 1);
+  }
+}
+function hearts(a, n = 1) { for (let i = 0; i < n; i++) floatUp(TEX.heart, headPos(a).add(V(rnd(-0.4, 0.4), 0.5 + i * 0.25, rnd(-0.3, 0.3))), 0.55, 0.55, 1.8, 1.2); }
+function call(a, k) {
+  if (a.id === 'farmer') return;
+  play(a.voice, k ?? (a.baby ? 0.6 : 1), a.pitch); if (a.parts.wings.length) a.flapT0 = time;
+  const s = a.baby ? 0.7 : 1; floatUp(wordTex(WORDS[a.id]), headPos(a).add(V(0, 0.9 * s, 0)), 1.9 * s, 0.95 * s, 1.4, 0.8);
+}
+function greet(a, n = 1, k) { a.hopT0 = time; a.happyT0 = time; call(a, k); hearts(a, n); }
+
+function stepActor(a, dt) {
+  const o = a.parts, R = a.root;
+  if (a.leap) {
+    const L = a.leap, k = clamp((time - L.t0) / L.dur, 0, 1);
+    R.position.x = L.x0 + (L.x1 - L.x0) * k; R.position.z = L.z0 + (L.z1 - L.z0) * k; a.lift = 4 * k * (1 - k) * L.h; a.v = 2;
+    if (k >= 1) { a.leap = null; a.lift = 0; a.v = 0; if (L.g === gen) L.r(); }
+  } else if (a.target) {
+    const T = a.target, dx = T.x - R.position.x, dz = T.z - R.position.z, d = Math.hypot(dx, dz);
+    if (d < 0.05) { R.position.x = T.x; R.position.z = T.z; a.target = null; a.v = 0; if (T.g === gen) T.r(); }
+    else { a.heading = turnAngle(a.heading, faceDir(dx, dz), dt * 8); const sp = Math.min(a.speed, d * 3 + 0.4); a.v += (sp - a.v) * Math.min(1, dt * 6); const st = Math.min(d, a.v * dt); R.position.x += dx / d * st; R.position.z += dz / d * st; }
+  } else { a.v = Math.max(0, a.v - dt * 8); if (a.face != null) a.heading = turnAngle(a.heading, a.face, dt * 4); }
+  if (a.intoBarn && R.position.z < DOOR.z - 1.2) R.visible = false;
+  R.rotation.y = a.heading;
+  const amp = clamp(a.v / 2.6, 0, 1), hopK = clamp((time - a.hopT0) / 0.55, 0, 1), hop = hopK < 1 ? Math.sin(Math.PI * hopK) * 0.5 : 0;
+  a.gait += dt * (3 + (o.bird ? 15 : 10) * amp);
+  const bob = o.hopper ? Math.abs(Math.sin(a.gait * 0.5)) * 0.55 * amp : amp > 0 ? Math.abs(Math.sin(a.gait)) * (o.bird ? 0.06 : 0.1) * amp * (o.mixer ? 0.3 : 1) : Math.sin(time * 2 + a.seed * 9) * 0.012;
+  a.bodyG.position.y = bob + hop + a.lift;
+  const rollK = clamp((time - a.rollT0) / 1.6, 0, 1), shK = time - a.shakeT0, munchN = a.munch ? Math.abs(Math.sin(time * 8 + a.seed * 5)) : 0;
+  a.bodyG.rotation.x = (rollK < 1 ? Math.sin(Math.PI * rollK) * 1.45 : 0) + (shK >= 0 && shK < 1.4 ? Math.sin(shK * 40) * 0.32 * (1 - shK / 1.4) : 0);
+  a.bodyG.rotation.z = (amp > 0 ? Math.sin(a.gait) * 0.05 * amp : 0) + a.lean - (o.mixer ? munchN * 0.12 : 0);
+  if (!o.farmer) { o.headG.rotation.y = amp > 0.1 || a.munch ? 0 : Math.sin(time * 0.7 + a.seed * 9) * 0.3; o.headG.rotation.z = amp > 0 ? Math.sin(a.gait) * 0.08 * amp : -munchN * 0.55 + Math.sin(time * 1.5 + a.seed * 7) * 0.04; }
+  for (const Lg of o.legs) { const ph = a.gait * (o.bird ? 1.5 : 1) + Lg.off, sn = Math.sin(ph), cs = Math.cos(ph); Lg.hip.rotation.z = (Lg.front ? 0.1 : -0.06) + 0.6 * amp * sn; Lg.knee.rotation.z = (Lg.front ? -1 : 1) * amp * (0.15 + 0.55 * Math.max(0, -cs)); }
+  const flap = time - a.flapT0 < 1 || hopK < 1;
+  for (const wg of o.wings) wg.piv.rotation.x = wg.s * (flap ? 0.3 + Math.abs(Math.sin(real * 26)) * 1.1 : 0.12 + amp * Math.sin(a.gait * 2) * 0.2);
+  if (o.tail) o.tail.rotation.y = Math.sin(real * (time - a.happyT0 < 2 ? 14 : 5) + a.seed * 5) * 0.3;
+  if (o.mixer) {
+    const want = amp > 0.05 || a.leap || hopK < 1 ? o.acts.run : o.acts.idle;
+    if (want !== o.cur) { want.reset().fadeIn(0.2).play(); o.cur.fadeOut(0.2); o.cur = want; }
+    o.acts.run.timeScale = o.rate * (a.leap || hopK < 1 ? 1.2 : 0.6 + 0.8 * amp); o.mixer.update(dt);
+  }
+  if (o.farmer) {
+    const F = o.farmer, sw = Math.sin(a.gait) * 0.55 * amp, pk = clamp((time - a.pourT0) / 1.1, 0, 1);
+    F.legs[0].rotation.x = sw; F.legs[1].rotation.x = -sw;
+    F.arms[1].rotation.x = pk < 1 ? -Math.sin(Math.PI * pk) * 1.9 : -sw * 0.7;
+    F.arms[0].rotation.x = a.hosing ? -1.25 : a.waving ? 0 : sw * 0.7; F.arms[0].rotation.z = a.waving ? -2.5 + Math.sin(real * 8) * 0.4 : 0;
+  }
+}
+
+/* ---- particles: bits come from the race; bubbles and water are new ---- */
+function lob(from, to, color, T = 0.5) {
+  let b = bitPool.find(b => !b.m.visible);
+  if (!b) { if (bitPool.length > 260) return; const m = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.14), mat(0xffffff)); m.castShadow = false; scene.add(m); b = { m, v: V(0, 0, 0), life: 0 }; bitPool.push(b); }
+  b.m.material = mat(color); b.m.position.copy(from); b.m.visible = true; b.m.scale.setScalar(rnd(0.5, 1));
+  b.v.set((to.x - from.x) / T, (to.y - from.y + 7 * T * T) / T, (to.z - from.z) / T); b.life = T + 0.15;
+}
+const bubbles = [], bubbleMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, emissive: 0x88aacc, emissiveIntensity: 0.3 });
+function bubble(x, y, z) {
+  let b = bubbles.find(b => !b.m.visible);
+  if (!b) { if (bubbles.length > 140) return; const m = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), bubbleMat); m.castShadow = false; scene.add(m); b = { m }; bubbles.push(b); }
+  b.m.position.set(x, y, z); b.r = rnd(0.12, 0.32); b.t = 0; b.life = rnd(1.8, 3.2); b.ph = rnd(0, TAU); b.m.scale.setScalar(0.01); b.m.visible = true;
+}
+function stepBubbles(dt) { for (const b of bubbles) { if (!b.m.visible) continue; b.t += dt; const k = b.t / b.life; if (k >= 1) { b.m.visible = false; if (Math.random() < 0.25) play('blip'); continue; } b.m.position.y += dt * 0.35; b.m.position.x += Math.sin(time * 3 + b.ph) * dt * 0.3; b.m.scale.setScalar(b.r * Math.min(1, k * 6)); } }
+const WATER = [0x8fd0ff, 0x5fb6f0, 0xc8ecff], MUDS = [0x7a5230, 0x5e3d22, 0x8a6440];
+const dropsEl = $('drops');
+for (let i = 0; i < 14; i++) { const d = document.createElement('span'), s = rnd(18, 64); d.style.cssText = `left:${rnd(2, 92)}%;top:${rnd(4, 80)}%;width:${s}px;height:${s * rnd(1, 1.25)}px`; dropsEl.appendChild(d); }
+function screenSplash() { if (reduced) return; dropsEl.classList.remove('show'); void dropsEl.offsetWidth; dropsEl.classList.add('show'); }
+
+/* ---- words on screen, and a narrator voice ---- */
+const capEl = $('caption'), bannerOv = $('bannerOv'), bannerTxt = $('bannerTxt'), countOv = $('countOv'), countTxt = $('countTxt'), fadeOv = $('fadeOv'), startOv = $('startOv'), startBtn = $('startBtn');
+let VOICE = null;
+function pickVoice() { try { const vs = speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang)); VOICE = vs.find(v => /Samantha|Karen|Moira|Tessa|Google US English|Aria|Jenny/i.test(v.name)) || vs.find(v => /en[-_]US/i.test(v.lang)) || vs[0] || null; } catch (e) {} }
+const canSpeak = 'speechSynthesis' in window;
+if (canSpeak) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function musicLevel(v) { if (AC && musicBus) musicBus.gain.setTargetAtTime(v, AC.currentTime, 0.15); }
+function say(text, spoken = text) {
+  capEl.textContent = text; capEl.classList.remove('pop'); void capEl.offsetWidth; capEl.classList.add('pop');
+  if (!canSpeak || !S.sound || !S.voice) return;
+  try {
+    speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(spoken); u.rate = 0.88; u.pitch = 1.15; u.volume = 1; if (VOICE) u.voice = VOICE;
+    u.onstart = () => musicLevel(MUSIC_VOL * 0.4); u.onend = u.onerror = () => musicLevel(MUSIC_VOL); speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function hush() { if (canSpeak) try { speechSynthesis.cancel(); } catch (e) {} }
+function count(n) { countTxt.textContent = n; countOv.hidden = false; countTxt.classList.remove('pop'); void countTxt.offsetWidth; countTxt.classList.add('pop'); say(NUM[n]); clearTimeout(count.t); count.t = setTimeout(() => (countOv.hidden = true), 1300); }
+
+/* ---- camera: slow, gentle moves ---- */
+const cam = { pos: V(-2, 6, 20), look: V(-2, 1, 0), tp: V(-2, 6, 20), tl: V(-2, 1, 0), rate: 1, follow: null };
+function shot(px, py, pz, lx, ly, lz, rate = 0.9) { cam.tp.set(px, py, pz); cam.tl.set(lx, ly, lz); cam.rate = rate; cam.follow = null; }
+function cut() { cam.pos.copy(cam.tp); cam.look.copy(cam.tl); }
+function stepCamera(dt) {
+  if (cam.follow) cam.follow();
+  const k = 1 - Math.exp(-dt * cam.rate); cam.pos.lerp(cam.tp, k); cam.look.lerp(cam.tl, k);
+  const sw = reduced ? 0 : 1; camera.position.set(cam.pos.x + Math.sin(real * 0.23) * 0.3 * sw, cam.pos.y + Math.sin(real * 0.31) * 0.15 * sw, cam.pos.z); camera.lookAt(cam.look);
+}
+function framePair(a, b, rate = 0.9) { const p = posOf(a), q = posOf(b), mx = (p.x + q.x) / 2, mz = (p.z + q.z) / 2, d = Math.hypot(p.x - q.x, p.z - q.z); shot(mx, 2.6 + d * 0.32, mz + 5.5 + d * 0.7, mx, 0.7, mz, rate); }
+
+/* ---- the scenes ---- */
+function resetStage() {
+  for (const a of actors) { a.root.visible = false; a.target = a.leap = null; a.munch = a.hosing = a.waving = a.intoBarn = false; a.lean = 0; a.lift = 0; a.v = 0; a.face = null; }
+  [cast.pig, ...cast.piglets].forEach(a => setMud(a, 0));
+  for (const f of world.foods || []) scene.remove(f); world.foods = [];
+  const F = cast.farmer.parts.farmer; F.bucket.visible = false; F.hose.visible = false;
+  world.troughs.visible = true; setSky(0); setGlow(0); countOv.hidden = true; bannerOv.hidden = true; capEl.textContent = ''; cam.follow = null;
+}
+const YARD = ['horse', 'cow', 'goat', 'sheep', 'pig', 'chicken', 'duck', 'frog'];
+function setupMorning() {
+  setSky(0.55);
+  YARD.forEach((id, i) => place(cast[id], -15 + i * 3.2, 1.5 + (i % 2) * 1.6 + Math.sin(i) * 0.5));
+  shot(-4, 4.6, 15, -4, 1.2, 1);
+}
+async function sceneMorning() {
+  tween(4, k => setSky(0.55 * (1 - k)));
+  play('rooster'); say('Cock-a-doodle-doo! Good morning, farm!'); await wait(4.2);
+  for (const id of ['pig', 'duck', 'frog']) { const a = cast[id]; framePair(a, a, 1.1); say(`Good morning, ${a.name}!`); await wait(1.1); greet(a, 2); await wait(2.2); }
+  shot(-4, 4.6, 15, -4, 1.2, 1); say('Good morning, everybody!');
+  YARD.forEach((id, i) => setTimeout(() => cast[id].root.visible && greet(cast[id]), 300 + i * 260)); await wait(4);
+}
+
+const FEED = [['pig', 'slop'], ['cow', 'hay'], ['sheep', 'hay'], ['chicken', 'corn'], ['horse', 'carrot'], ['goat', 'apple'], ['duck', 'corn'], ['frog', 'fly']];
+function setupFeed() {
+  FEED.forEach(([id], i) => place(cast[id], SLOT_X(i), FEED_Z));
+  place(cast.farmer, SLOT_X(0) - 4, TROUGH_Z + 1.8, 0); cast.farmer.parts.farmer.bucket.visible = true;
+  shot(-1, 5, 12, -1, 0.8, -3.5);
+}
+function makeFood(kind, x, z) {
+  const g = grp(x, 0.62, z, scene); world.foods.push(g);
+  if (kind === 'hay') for (let i = 0; i < 10; i++) { const b = box(rnd(0.5, 0.8), 0.1, 0.14, pick([C.HAY, 0xd9b24a, 0xf0d070])); b.rotation.set(rnd(-0.3, 0.3), rnd(0, TAU), rnd(-0.3, 0.3)); at(b, rnd(-0.6, 0.6), rnd(0.02, 0.16), rnd(-0.2, 0.2), g); }
+  if (kind === 'slop') { at(noShadow(ell(0.85, 0.07, 0.3, 0x9a6a3c)), 0, 0.02, 0, g); for (let i = 0; i < 7; i++) at(sph(0.08, pick([0xe23b2e, 0x7fbf3f, 0xf5b32b]), {}, 6), rnd(-0.6, 0.6), 0.08, rnd(-0.18, 0.18), g); }
+  if (kind === 'corn') for (let i = 0; i < 26; i++) at(noShadow(sph(0.055, pick([0xf7d548, 0xf0c03a]), {}, 5)), rnd(-0.8, 0.8), 0.04, rnd(-0.25, 0.25), g);
+  if (kind === 'carrot') for (let i = 0; i < 3; i++) { const c = grp(-0.5 + i * 0.5, 0.1, rnd(-0.1, 0.1), g); c.rotation.y = rnd(-0.4, 0.4); at(cone(0.08, 0.5, 0xf28a1e, 7), 0, 0, 0, c).rotation.z = Math.PI / 2; at(cone(0.06, 0.2, 0x4caf50, 5), 0.32, 0, 0, c).rotation.z = -Math.PI / 2; }
+  if (kind === 'apple') for (let i = 0; i < 3; i++) { at(sph(0.16, 0xe23b2e, {}, 10), -0.45 + i * 0.45, 0.14, rnd(-0.1, 0.1), g); at(noShadow(cyl(0.015, 0.015, 0.1, 0x5a3b1e, 4)), -0.45 + i * 0.45, 0.32, 0, g); }
+  return g;
+}
+async function frogSnack(frog, x) {
+  const fly = grp(x, 1.4, TROUGH_Z, scene); world.foods.push(fly); at(noShadow(sph(0.08, 0x222222, {}, 6)), 0, 0, 0, fly);
+  const wingM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, side: THREE.DoubleSide });
+  const wings = [-1, 1].map(s => { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.09), wingM); w.position.set(0, 0.06, s * 0.08); fly.add(w); return w; });
+  let caught = false; play('buzz');
+  tick(() => { if (caught) return false; fly.position.set(x + Math.sin(time * 2.6) * 0.9, 1.3 + Math.sin(time * 7) * 0.18, TROUGH_Z - 0.6 + Math.cos(time * 2.1) * 0.5); wings.forEach((w, i) => (w.rotation.x = Math.sin(real * 60 + i * 3) * 0.8)); });
+  say('Hoppy is hungry for a bug! Bzzz!'); frog.face = FACE_CAM; await walkTo(frog, x, TROUGH_Z - 1.6, 1.5); await wait(2.4);
+  // zap! the tongue reaches the fly and brings it back
+  caught = true; const from = headPos(frog).add(V(0, -0.05, 0.15)), to = fly.position.clone(), dir = to.clone().sub(from), len = dir.length();
+  const tg = new THREE.CylinderGeometry(0.035, 0.05, 1, 6); tg.translate(0, 0.5, 0); const tongue = new THREE.Mesh(tg, mat(0xff6f91)); tongue.position.copy(from); tongue.quaternion.setFromUnitVectors(V(0, 1, 0), dir.normalize()); scene.add(tongue); world.foods.push(tongue);
+  play('boing'); await tween(0.5, k => { const e = Math.sin(Math.PI * k); tongue.scale.set(1, Math.max(0.01, e * len), 1); if (k > 0.5) fly.position.lerpVectors(from, to, e); });
+  scene.remove(tongue); scene.remove(fly); play('munch');
+}
+async function sceneFeed() {
+  music('hoedown', 96, true); musicLevel(MUSIC_VOL);
+  const F = cast.farmer;
+  say("Feeding time! Who's hungry?"); await wait(3.2);
+  cam.follow = () => { const x = posOf(F).x; cam.tp.set(x + 0.2, 3.4, 5.4); cam.tl.set(x - 0.4, 0.9, -3.2); }; cam.rate = 0.9;
+  for (let i = 0; i < FEED.length; i++) {
+    const [id, food] = FEED[i], a = cast[id], x = SLOT_X(i), an = byId[id];
+    if (food !== 'fly') say(`${a.name} the ${an.kind.toLowerCase()} is hungry!`);
+    await walkTo(F, x + 1.5, TROUGH_Z + 0.9, 3); F.face = faceDir(-1, -0.6); await wait(0.3);
+    if (food === 'fly') await frogSnack(a, x);
+    else {
+      F.pourT0 = time; await wait(0.55); const g = makeFood(food, x, TROUGH_Z); play(food === 'corn' ? 'flutter' : 'thud'); if (food === 'corn') burst(V(x, 1, TROUGH_Z), [0xf7d548, 0xf0c03a], 10, 1, 2);
+      await walkTo(a, x, TROUGH_Z - (id === 'cow' || id === 'horse' ? 1.6 : 1.15), 1.6);
+      a.munch = true; for (let k = 0; k < 3; k++) { play('munch'); await tween(0.75, e => g.scale.setScalar(Math.max(0.05, 1 - (k + e) / 3))); }
+      a.munch = false; scene.remove(g);
+    }
+    say(`Yum yum! ${an.say}`); greet(a, 2); await wait(1.6);
+  }
+  cam.follow = null; shot(-1, 5, 12, -1, 0.8, -3.5);
+  say('Everybody is full. Thank you, farmer!'); F.waving = true; play('cheer');
+  FEED.forEach(([id], i) => setTimeout(() => greet(cast[id]), 200 + i * 280)); await wait(4.5); F.waving = false; stopMusic(1.2);
+}
+
+function setupBath() {
+  const pigs = [cast.pig, ...cast.piglets];
+  pigs.forEach((p, i) => place(p, MUD.x - 8 - i * 1.4, MUD.z + 1 - i * 1.2, 0));
+  shot(MUD.x - 0.5, 3.2, MUD.z + 8.5, MUD.x - 2.2, 0.6, MUD.z);
+}
+async function sceneBath() {
+  music('macdonald', 100, true, t => CALLS.pig(t, 0.6)); musicLevel(MUSIC_VOL);
+  const pigs = [cast.pig, ...cast.piglets], F = cast.farmer.parts.farmer;
+  say('Wilbur and the piglets found a big mud puddle!'); await wait(3);
+  const spots = [[MUD.x - 1.2, MUD.z - 0.2], [MUD.x + 1.4, MUD.z + 0.9], [MUD.x + 0.8, MUD.z - 1.3]];
+  await Promise.all(pigs.map((p, i) => walkTo(p, spots[i][0] - 3.6, spots[i][1], 3)));
+  say('Ready, set... jump!'); await wait(1);
+  for (let i = 0; i < 3; i++) { const p = pigs[i]; await leapTo(p, spots[i][0], spots[i][1], p.baby ? 0.8 : 1.1, 0.6); play('splat'); burst(V(spots[i][0], 0.3, spots[i][1]), MUDS, 14, 2, 5); tween(0.5, k => setMud(p, Math.max(p.mud, k * 0.5))); }
+  say('Splish! Splash! Muddy piggies!'); await wait(1.5);
+  say('Roll, roll, roll in the mud!');
+  for (const p of pigs) { p.rollT0 = time; play('splat'); burst(V(posOf(p).x, 0.4, posOf(p).z), MUDS, 10, 2, 4); tween(1.2, k => setMud(p, 0.5 + 0.5 * k)); await wait(0.9); }
+  await wait(1.2); pigs.forEach((p, i) => setTimeout(() => greet(p), i * 300)); await wait(2.4);
+  // the farmer comes with the hose
+  const farmer = cast.farmer; place(farmer, MUD.x + 11, MUD.z + 2, Math.PI); F.hose.visible = true;
+  framePair(farmer, cast.pig); say('Uh oh! Bath time, piggies!'); await walkTo(farmer, MUD.x + 4.6, MUD.z + 0.2, 2.8); farmer.face = Math.PI;
+  shot(MUD.x + 0.8, 3, MUD.z + 8, MUD.x + 0.6, 0.6, MUD.z);
+  say('Scrub-a-dub-dub! Bubbles!');
+  every(0.06, 4.2, () => { const p = pick(pigs), q = posOf(p); bubble(q.x + rnd(-0.9, 0.9) * p.scale, rnd(0.4, 1.2) * p.scale, q.z + rnd(-0.6, 0.6) * p.scale); });
+  pigs.forEach(p => (p.lean = 0)); tween(4.2, k => pigs.forEach(p => setMud(p, 1 - 0.65 * k)));
+  every(0.9, 4, () => (pick(pigs).hopT0 = time)); await wait(4.6);
+  say('Rinse with the hose! Splash!'); farmer.hosing = true;
+  const tipW = V(0, 0, 0);
+  every(0.03, 3.6, () => { F.tip.getWorldPosition(tipW); const q = posOf(pick(pigs)); lob(tipW, V(q.x + rnd(-0.6, 0.6), rnd(0.6, 1.1), q.z + rnd(-0.5, 0.5)), pick(WATER), 0.45); });
+  every(0.8, 3.6, () => play('splash')); tween(3.6, k => pigs.forEach(p => setMud(p, 0.35 * (1 - k)))); await wait(3.8); farmer.hosing = false;
+  say('Shake, shake, shake!');
+  for (const p of pigs) { p.shakeT0 = time; const q = posOf(p); burst(V(q.x, 0.9 * p.scale + 0.3, q.z), WATER, 18, 3, 4); play('splash'); await wait(0.45); }
+  screenSplash(); play('splash'); await wait(1.8);
+  say('Squeaky clean piggies!'); farmer.waving = true; pigs.forEach((p, i) => setTimeout(() => greet(p, 2), i * 280)); await wait(3.6); farmer.waving = false; stopMusic(1.2);
+}
+
+function setupRoundUp() {
+  const flock = [cast.sheep, ...cast.flock];
+  flock.forEach((s, i) => place(s, rnd(-9, -3) + i * 0.8, 15 + (i % 3) * 2.2 + rnd(-0.5, 0.5), rnd(-1, 1)));
+  place(cast.goat, 2, 21, Math.PI);
+  shot(-9, 5, 27, -11, 1, 13);
+}
+async function sceneRoundUp() {
+  music('baa', 100, true); musicLevel(MUSIC_VOL);
+  const flock = [cast.sheep, ...cast.flock];
+  say('Time to bring the sheep home!'); await wait(3);
+  shot(-11, 3.8, 20.5, -18.5, 1, 10.5);
+  for (let i = 0; i < flock.length; i++) {
+    const s = flock[i], z = 6.6 + i * 1.7;
+    await walkTo(s, -13.8, z, 3.4); play('sheep', 0.7);
+    const land = leapTo(s, rnd(-25.5, -21), z + rnd(-0.6, 0.6), 1.9, 1.1); await wait(0.55); count(i + 1); await land;
+    s.face = rnd(-Math.PI, Math.PI);
+  }
+  await wait(0.8); framePair(cast.goat, cast.goat, 0.9); say('Oh! Billy the goat wants to come too!'); greet(cast.goat); await wait(2.2);
+  shot(-11, 3.8, 20.5, -18.5, 1, 10.5);
+  await walkTo(cast.goat, -13.8, 13.8, 3.6); play('goat', 0.7); const land = leapTo(cast.goat, -21.5, 13, 2.2, 1.1); await wait(0.55); count(6); await land;
+  await wait(1); say('Everybody is home! Hooray!'); play('cheer');
+  [...flock, cast.goat].forEach((s, i) => setTimeout(() => greet(s), i * 260)); await wait(4.2); stopMusic(1.2);
+}
+
+const PAIRS = () => [
+  { mama: cast.pig, kids: cast.piglets, lost: 'Two little piglets are lost! Where is Mama?', found: 'Wilbur found the piglets! Hooray!' },
+  { mama: cast.duck, kids: [cast.duckling], lost: 'The little duckling is lost! Where is Mama?', found: 'Puddles found the duckling! Quack quack!' },
+  { mama: cast.cow, kids: [cast.calf], lost: 'The little calf is lost! Where is Mama?', found: 'Daisy found the calf! Moo!' },
+  { mama: cast.frog, kids: [cast.froglet], lost: 'The little froglet is lost! Where is Mama?', found: 'Hoppy found the froglet! Ribbit!' },
+  { mama: cast.sheep, kids: [cast.lamb], lost: 'The little lamb is lost! Where is Mama?', found: 'Woolly found the lamb! Baa!' },
+  { mama: cast.chicken, kids: [cast.chick], lost: 'The little chick is lost! Where is Mama?', found: 'Henrietta found the chick! Peep peep!' },
+];
+function setupMama() {
+  const P = world.pads;
+  place(cast.pig, -8, 1); place(cast.cow, -3, 0); place(cast.sheep, 2, 1); place(cast.chicken, 7.5, 0.5);
+  place(cast.duck, POND.x - 3, POND.z + 1.2, 0); place(cast.frog, P[0].x, P[0].z, 0);
+  place(cast.piglets[0], -12, 21.5, 0); place(cast.piglets[1], -10.5, 21, 0); place(cast.calf, 2, 23); place(cast.lamb, -17, 21, 0);
+  place(cast.chick, 13, 3.2, Math.PI); place(cast.duckling, POND.x + 4.6, POND.z + 1.4, Math.PI); place(cast.froglet, P[3].x, P[3].z, Math.PI);
+  shot(4, 7, 26, 4, 0.8, 4);
+}
+async function sceneMama() {
+  music('mary', 92, true); musicLevel(MUSIC_VOL);
+  say('Some babies got lost on the farm!'); await wait(3);
+  for (const { mama, kids, lost, found } of PAIRS()) {
+    const kid = kids[0];
+    framePair(kid, kid, 1.2); say(lost); await wait(1.4);
+    for (const k of kids) { greet(k); await wait(0.35); } await wait(1.6);
+    framePair(mama, mama, 1.2); lookAt(mama, kid); say(`Here I am, says ${mama.name}!`); await wait(0.9); greet(mama); await wait(1.8);
+    const p = posOf(mama), offs = kids.length > 1 ? [-0.9, 0.9] : [0.9];
+    cam.follow = () => { const q = posOf(kid); cam.tp.set(q.x, 3.4, q.z + 7.5); cam.tl.set(q.x, 0.6, q.z - 1); }; cam.rate = 1.4;
+    await Promise.all(kids.map((k, i) => walkTo(k, p.x + offs[i], p.z + 1.6, k.parts.hopper ? 2 : 3)));
+    cam.follow = null; framePair(mama, kids[0], 1);
+    kids.forEach(k => lookAt(k, mama)); lookAt(mama, kids[0]); await wait(0.6);
+    mama.lean = -0.15; kids.forEach(k => (k.lean = -0.22)); hearts(mama, 3); kids.forEach(k => hearts(k, 2)); say(found); greet(mama, 1); kids.forEach(k => setTimeout(() => greet(k), 400));
+    await wait(2.6); mama.lean = 0; kids.forEach(k => (k.lean = 0));
+  }
+  shot(4, 8, 28, 4, 0.8, 4, 0.6); say('Everybody found their mama!'); play('cheer'); await wait(3.6); stopMusic(1.2);
+}
+
+function setupBed() {
+  setSky(0.2); world.troughs.visible = false; // the farmer tidied up for the night
+  place(cast.horse, -20, -3); place(cast.cow, -16, -2.4); place(cast.calf, -15, -0.6); place(cast.goat, -12, -3.2);
+  place(cast.sheep, -8, -2.2); cast.flock.forEach((s, i) => place(s, -9.5 + i * 1.2, -0.4 + (i % 2) * 1.3)); place(cast.lamb, -6.5, 0.8);
+  place(cast.pig, -3, -2.4); place(cast.piglets[0], -2.2, -0.8); place(cast.piglets[1], -3.6, -0.5); place(cast.chicken, 1.2, -1.6); place(cast.chick, 2, -0.4);
+  place(cast.duck, POND.x - 2.6, POND.z + 0.6, 0); place(cast.duckling, POND.x - 1.4, POND.z + 1.7, 0); place(cast.frog, POND.x - 7, POND.z - 0.4, 0); place(cast.froglet, POND.x - 6.6, POND.z + 1, 0);
+  shot(-6, 6, 15, -10, 2, -5);
+}
+async function sceneBed() {
+  music('twinkle', 66, true); musicLevel(MUSIC_VOL);
+  say('The sun is going down. Time for bed, animals!');
+  tween(9, k => { setSky(0.2 + 0.8 * k); setGlow(clamp(k * 1.6 - 0.4, 0, 1)); }); await wait(5);
+  const groups = [[cast.horse], [cast.cow, cast.calf], [cast.goat], [cast.sheep, ...cast.flock, cast.lamb], [cast.pig, ...cast.piglets], [cast.chicken, cast.chick]];
+  const names = ['Buttercup', 'Daisy and the calf', 'Billy', 'Woolly and the sheep', 'Wilbur and the piglets', 'Henrietta and the chick'];
+  for (let g = 0; g < groups.length; g++) {
+    say(`Night night, ${names[g]}!`); call(groups[g][0], 0.5);
+    const go = async (m, j) => { await wait(j * 0.4); m.intoBarn = true; await walkTo(m, DOOR.x + rnd(-1.6, 1.6), DOOR.z + 1.2, 2.3); return walkTo(m, posOf(m).x, BARN.z, 2.3); };
+    const lead = go(groups[g][0], 0); groups[g].slice(1).forEach((m, j) => go(m, j + 1));
+    await wait(3.4); await lead.catch(() => {});
+  }
+  // the pond animals sleep outside
+  shot(POND.x - 3, 3.6, POND.z + 10, POND.x - 1, 0.4, POND.z, 0.6);
+  say('Puddles and the duckling float on the pond.'); walkTo(cast.duck, POND.x + 0.6, POND.z - 0.2, 0.8); walkTo(cast.duckling, POND.x + 1.4, POND.z + 0.7, 0.8); await wait(3.6);
+  say('Hoppy and the froglet hop onto a lily pad. Ribbit!'); const pad = world.pads[1];
+  walkTo(cast.frog, pad.x - 0.25, pad.z, 1.6); await walkTo(cast.froglet, pad.x + 0.35, pad.z + 0.25, 1.6); call(cast.frog, 0.5); await wait(1.2);
+  const Z = canvasTex(128, 128, c => { c.font = '900 84px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 10; c.strokeStyle = '#1d2552'; c.strokeText('z', 64, 70); c.fillStyle = '#fff'; c.fillText('z', 64, 70); });
+  const zzz = (x, y, z, s = 0.8) => floatUp(Z, V(x + rnd(-0.3, 0.3), y, z), s, s, 2.4, 0.7);
+  every(1.1, 60, () => { for (const a of [cast.duck, cast.frog]) { const p = posOf(a); zzz(p.x, 1.3, p.z, 0.6); } });
+  await wait(3.5);
+  shot(6, 12, 40, -8, 3, -10, 0.3);
+  every(0.9, 60, () => zzz(BARN.x + 0.5, 8.5, BARN.z + 6, 1.4));
+  say('Good night, farm!'); await wait(6);
+  say('Good night, Violet!'); await wait(6); stopMusic(4); await wait(2);
+}
+
+const SCENES = [
+  { id: 'morning', title: 'Good morning!', emoji: '🌅', setup: setupMorning, run: sceneMorning },
+  { id: 'feed', title: 'Feeding Time', emoji: '🥕', setup: setupFeed, run: sceneFeed },
+  { id: 'bath', title: 'Muddy Pig Bath', emoji: '🐷', setup: setupBath, run: sceneBath },
+  { id: 'roundup', title: 'Round-Up', emoji: '🐑', setup: setupRoundUp, run: sceneRoundUp },
+  { id: 'mama', title: 'Mama and Baby', emoji: '🐣', setup: setupMama, run: sceneMama },
+  { id: 'bed', title: 'Bedtime', emoji: '🌙', setup: setupBed, run: sceneBed },
+];
+async function playFrom(i, whole) {
+  const g = ++gen; hush(); stopMusic(0.4); startOv.hidden = true; audio();
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', +c.dataset.i === (whole ? -1 : i)));
+  for (let k = i; k < (whole ? SCENES.length : i + 1); k++) {
+    const sc = SCENES[k];
+    fadeOv.classList.add('on'); await wait(0.7);
+    resetStage(); sc.setup(); cut(); bannerTxt.textContent = `${sc.emoji} ${sc.title}`; bannerOv.hidden = false; fadeOv.classList.remove('on'); say(sc.title);
+    await wait(2.6); bannerOv.hidden = true;
+    await sc.run();
+  }
+  if (g !== gen) return;
+  if (whole) { startBtn.textContent = '▶ Play the day again'; startOv.hidden = false; }
+  else say('The end! Tap an animal, or pick another show.');
+}
+
+/* ---- taps: any animal you touch says hello ---- */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), groundPlane = new THREE.Plane(V(0, 1, 0), 0);
+function onTap(e) {
+  audio(); const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, camera);
+  const shown = actors.filter(a => a.root.visible), hit = ray.intersectObjects(shown.map(a => a.root), true)[0];
+  let a = hit && hit.object.userData.actor;
+  const p = ray.ray.intersectPlane(groundPlane, V(0, 0, 0));
+  if (!a && p) { let best = 2.6; for (const b of shown) { const d = Math.hypot(posOf(b).x - p.x, posOf(b).z - p.z); if (d < best) { best = d; a = b; } } }
+  if (a) { if (time - a.lastTap > 0.5) { a.lastTap = time; greet(a, 2); } }
+  else if (p) { burst(p.setY(0.3), [0xffd23f, 0xff8fb1, 0x8fd0ff, 0x8fe08a], 12, 2, 5); play('boing'); }
+}
+
+/* ---- buttons ---- */
+function renderChips() {
+  const nav = $('scenes'), mk = (i, em, label) => `<button type="button" class="chip" data-i="${i}" disabled><span class="em">${em}</span>${label}</button>`;
+  nav.innerHTML = mk(-1, '☀️', 'The whole day') + SCENES.slice(1).map((s, j) => mk(j + 1, s.emoji, s.title)).join('');
+  nav.addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b || b.disabled) return; unlockSpeech(); const i = +b.dataset.i; playFrom(i < 0 ? 0 : i, i < 0); });
+}
+// iPad and iPhone only let a page talk after a tap, so speak a blank word on the first one.
+let spoke = false;
+function unlockSpeech() { if (spoke || !canSpeak) return; spoke = true; try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} }
+function setBtn(id, on, onTxt, offTxt) { const b = $(id); b.textContent = on ? onTxt : offTxt; b.setAttribute('aria-pressed', on); b.classList.toggle('armed', !on); }
+$('soundBtn').addEventListener('click', () => { S.sound = !S.sound; save(); setBtn('soundBtn', S.sound, 'Sound on', 'Sound off'); if (!S.sound) hush(); if (audio()) master.gain.setTargetAtTime(S.sound ? 0.8 : 0, now(), 0.05); });
+$('voiceBtn').addEventListener('click', () => { S.voice = !S.voice; save(); setBtn('voiceBtn', S.voice, 'Voice on', 'Voice off'); if (!S.voice) hush(); });
+$('fullBtn').addEventListener('click', () => { const el = document.documentElement; if (document.fullscreenElement || document.webkitFullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el); });
+['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => { $('fullBtn').textContent = document.fullscreenElement || document.webkitFullscreenElement ? 'Exit full screen' : 'Full screen'; W = 0; }));
+startBtn.addEventListener('click', () => { unlockSpeech(); playFrom(0, true); });
+setBtn('soundBtn', S.sound, 'Sound on', 'Sound off'); setBtn('voiceBtn', S.voice, 'Voice on', 'Voice off');
+if (!canSpeak) $('voiceBtn').hidden = true;
+
+/* ---- boot ---- */
+function layout() {
+  W = stageWrap.clientWidth || 800; H = clamp(Math.round(W * 9 / 16), 240, Math.max(260, Math.round(window.innerHeight * (document.fullscreenElement ? 0.86 : 0.74))));
+  renderer.setSize(W, H); camera.aspect = W / H; camera.updateProjectionMatrix();
+}
+function update(dt) {
+  real += dt; time += dt;
+  stepWaits(); stepTickers(dt);
+  for (const a of actors) stepActor(a, dt);
+  stepBits(dt); stepPuffs(dt); stepBubbles(dt); stepFloats(dt);
+  if (world.blades) world.blades.rotation.z += dt * 0.9;
+  for (const c of world.clouds) { c.position.x += dt * 0.7; if (c.position.x > 160) c.position.x = -160; }
+  stepCamera(dt);
+}
+let last = performance.now();
+function frame(t) { requestAnimationFrame(frame); const dt = Math.min(0.05, (t - last) / 1000); last = t; if (!W) layout(); update(dt); renderer.render(scene, camera); }
+function boot() {
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.useLegacyLights = true; glHost.appendChild(renderer.domElement);
+  } catch (e) { glHost.innerHTML = '<p class="gl-fail">This browser can\'t draw the 3D farm. Try Safari or Chrome on a computer or iPad.</p>'; startOv.hidden = true; return; }
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fd9ff); scene.fog = new THREE.Fog(0xbfe7ff, 90, 230);
+  camera = new THREE.PerspectiveCamera(50, 16 / 9, 0.1, 500);
+  hemi = new THREE.HemisphereLight(0xcfe9ff, 0x6a9a4a, 0.75); scene.add(hemi);
+  sun = new THREE.DirectionalLight(0xfff4dc, 1.0); sun.position.set(24, 44, 30); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.camera.left = sun.shadow.camera.bottom = -40; sun.shadow.camera.right = sun.shadow.camera.top = 40; sun.shadow.camera.near = 1; sun.shadow.camera.far = 160; sun.shadow.bias = -0.0005; scene.add(sun); scene.add(sun.target);
+  buildTextures(); buildFarm(); renderChips();
+  renderer.domElement.addEventListener('pointerdown', onTap);
+  window.addEventListener('resize', () => { W = 0; });
+  requestAnimationFrame(frame);
+  let ready = false;
+  const go = () => { if (ready) return; ready = true; buildCast(); world.foods = []; setupMorning(); setSky(0); cut(); startBtn.disabled = false; startBtn.textContent = '▶ Start the day'; document.querySelectorAll('.chip').forEach(c => (c.disabled = false)); };
+  loadModels().then(go); setTimeout(go, 12000);
+}
+boot();
+</script>
+</body>
+</html>
