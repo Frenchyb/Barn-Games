@@ -134,12 +134,14 @@ setTimeout(() => { if (!window.__barnyardBooted) { const h = document.getElement
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 window.__barnyardBooted = true;
 // Keep the original r128 colour handling so the hand-built farm looks the same; revisit when real models land.
 THREE.ColorManagement.enabled = false;
 const $ = id => document.getElementById(id);
 const TAU = Math.PI * 2, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rnd = (a, b) => a + Math.random() * (b - a), pick = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const SOFT = new URLSearchParams(location.search).get('look') !== 'flat'; // rounder toys and smooth-shaded models; ?look=flat for the old faceted look
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const ANIMALS = [
@@ -354,9 +356,9 @@ const mats = new Map();
 const mat = (color, opts = {}) => { const k = color + JSON.stringify(opts); if (!mats.has(k)) mats.set(k, new THREE.MeshLambertMaterial({ color, ...opts })); return mats.get(k); };
 function mesh(geo, color, opts) { const m = new THREE.Mesh(geo, mat(color, opts)); m.castShadow = true; m.receiveShadow = true; return m; }
 const box = (w, h, d, c, o) => mesh(new THREE.BoxGeometry(w, h, d), c, o);
-const sph = (r, c, o, seg = 12) => mesh(new THREE.SphereGeometry(r, seg, Math.max(6, seg - 4)), c, o);
+const sph = (r, c, o, seg = 12) => { if (SOFT) seg = Math.max(seg * 2, 24); return mesh(new THREE.SphereGeometry(r, seg, Math.max(6, seg - 4)), c, o); };
 const ell = (rx, ry, rz, c, o, seg = 14) => { const m = sph(1, c, o, seg); m.scale.set(rx, ry, rz); return m; };
-const cyl = (r1, r2, h, c, seg = 10, o) => mesh(new THREE.CylinderGeometry(r1, r2, h, seg), c, o);
+const cyl = (r1, r2, h, c, seg = 10, o) => mesh(new THREE.CylinderGeometry(r1, r2, h, SOFT ? Math.max(seg * 2, 20) : seg), c, o);
 const cone = (r, h, c, seg = 8, o) => mesh(new THREE.ConeGeometry(r, h, seg), c, o);
 const grp = (x = 0, y = 0, z = 0, parent) => { const g = new THREE.Group(); g.position.set(x, y, z); if (parent) parent.add(g); return g; };
 const at = (m, x, y, z, parent) => { m.position.set(x, y, z); if (parent) parent.add(m); return m; };
@@ -422,9 +424,14 @@ function buildBarn(x, z) {
     const hi = at(box(15.4, 0.35, 3.4, 0x7d3127), 0, 10.4, s * 1.6, g); hi.rotation.x = s * 0.42;
   }
   at(box(15.6, 0.4, 0.7, 0x5e2119), 0, 11.0, 0, g);
-  const door = at(box(5, 5.2, 0.25, 0xb9332f), 0, 2.6, 5.55, g);
-  for (const s of [-1, 1]) { const bar = at(box(0.3, 6.6, 0.1, C.FENCE), 0, 2.6, 5.72, g); bar.rotation.z = s * 0.72; }
-  at(box(5.2, 0.3, 0.1, C.FENCE), 0, 5.15, 5.72, g); for (const s of [-1, 1]) at(box(0.3, 5.3, 0.1, C.FENCE), s * 2.5, 2.6, 5.72, g);
+  // the big door: two leaves on hinges that swing open at bedtime, with a dark doorway behind them
+  at(noShadow(new THREE.Mesh(new THREE.PlaneGeometry(5, 5.2), mat(0x2a1a10))), 0, 2.6, 5.53, g);
+  world.doorLeaves = [-1, 1].map(s => {
+    const hinge = grp(s * 2.5, 0, 5.68, g), leaf = grp(-s * 1.25, 0, 0, hinge);
+    at(box(2.5, 5.2, 0.25, 0xb9332f), 0, 2.6, 0, leaf); at(box(2.6, 0.3, 0.1, C.FENCE), 0, 5.1, 0.16, leaf); at(box(2.6, 0.3, 0.1, C.FENCE), 0, 0.15, 0.16, leaf);
+    at(box(0.3, 5.3, 0.1, C.FENCE), s * 1.1, 2.6, 0.16, leaf); for (const r of [-1, 1]) at(box(0.25, 5.6, 0.1, C.FENCE), 0, 2.6, 0.16, leaf).rotation.z = r * 0.45;
+    return { hinge, s };
+  });
   at(box(1.8, 1.8, 0.2, C.FENCE), 0, 7.3, 5.4, g); at(box(1.2, 1.2, 0.1, 0x3b2a16), 0, 7.3, 5.52, g);
   at(box(14.2, 0.3, 11.2, C.FENCE), 0, 0.15, 0, g);
   at(cyl(0.05, 0.05, 1.4, 0x333, 6), 2, 11.7, 0, g); const vane = at(box(1.1, 0.08, 0.08, 0x333), 2, 12.3, 0, g); at(cone(0.12, 0.4, 0x333, 4), 2.5, 12.3, 0, g).rotation.z = -Math.PI / 2;
@@ -575,7 +582,7 @@ function prepModel(gltf, m) {
   const root = gltf.scene, clip = c => THREE.AnimationClip.findByName(gltf.animations, c);
   // Lambert like the rest of the farm; colours are converted so they sit with the hand-picked hex colours (colour management is off).
   const toLambert = q => { const l = new THREE.MeshLambertMaterial({ color: q.color.clone().convertLinearToSRGB(), map: q.map || null, transparent: q.transparent, opacity: q.opacity }); if (l.map) l.map.colorSpace = THREE.NoColorSpace; return l; };
-  root.traverse(o => { if (!o.isMesh) return; o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; o.userData.shared = true; o.material = Array.isArray(o.material) ? o.material.map(toLambert) : toLambert(o.material); });
+  root.traverse(o => { if (!o.isMesh) return; o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; o.userData.shared = true; if (SOFT) { const g = o.geometry.clone(); g.deleteAttribute('normal'); o.geometry = mergeVertices(g, 1e-3); o.geometry.computeVertexNormals(); } o.material = Array.isArray(o.material) ? o.material.map(toLambert) : toLambert(o.material); });
   const idle = clip(m.idle), run = clip(m.run);
   // Measure in the idle pose, then scale to height h, stand on y = 0, and centre on the origin.
   const mx = new THREE.AnimationMixer(root); mx.clipAction(idle).play(); mx.update(0); root.updateMatrixWorld(true);
@@ -624,6 +631,7 @@ const faceDir = (dx, dz) => Math.atan2(-dz, dx);
 const turnAngle = (from, to, k) => { const d = ((to - from + Math.PI) % TAU + TAU) % TAU - Math.PI; return from + d * Math.min(1, k); };
 const WORDS = { pig: 'Oink!', cow: 'Moo!', sheep: 'Baa!', chicken: 'Bawk!', horse: 'Neigh!', goat: 'Meh-eh!', duck: 'Quack!', frog: 'Ribbit!', chick: 'Peep!', farmer: 'Hello!' };
 const NUM = ['', 'One!', 'Two!', 'Three!', 'Four!', 'Five!', 'Six!', 'Seven!'];
+SFX.creak = t => osc({ f: 140, to: 95, t, d: 1.1, v: 0.05, type: 'sawtooth', lp: 700, a: 0.05, hold: 1, vib: { f: 22, depth: 18 } });
 SFX.blip = t => osc({ f: 700, to: 1200, t, d: 0.08, v: 0.04 });
 SFX.buzz = t => osc({ f: 220, t, d: 0.5, v: 0.025, type: 'sawtooth', lp: 900, vib: { f: 30, depth: 40 } });
 
@@ -660,7 +668,7 @@ function buildFarm() {
   world.stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xfff8d0, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, fog: false })); scene.add(world.stars);
   // warm light in the barn door and window at bedtime
   const glowMat = new THREE.MeshBasicMaterial({ color: 0xffcf6b, transparent: true, opacity: 0, fog: false });
-  world.doorGlow = at(new THREE.Mesh(new THREE.PlaneGeometry(5, 5.2), glowMat), BARN.x, 2.6, BARN.z + 5.82, scene); world.winGlow = at(new THREE.Mesh(new THREE.PlaneGeometry(1.25, 1.25), glowMat), BARN.x, 7.3, BARN.z + 5.6, scene);
+  world.doorGlow = at(new THREE.Mesh(new THREE.PlaneGeometry(5, 5.2), glowMat), BARN.x, 2.6, BARN.z + 5.56, scene); world.winGlow = at(new THREE.Mesh(new THREE.PlaneGeometry(1.25, 1.25), glowMat), BARN.x, 7.3, BARN.z + 5.6, scene);
   world.lamp = new THREE.PointLight(0xffc56b, 0, 26); world.lamp.position.set(DOOR.x, 3, DOOR.z + 2.5); scene.add(world.lamp);
 }
 const SKY = { day: new THREE.Color(0x9fd9ff), dusk: new THREE.Color(0xf4a46c), night: new THREE.Color(0x1d2552) }, tmpC = new THREE.Color(), SUNC = new THREE.Color(0xfff4dc), NIGHTC = new THREE.Color(0x9db0ff);
@@ -671,6 +679,7 @@ function setSky(k) {
   const night = clamp(k * 2 - 1, 0, 1); world.moon.material.opacity = night; world.stars.material.opacity = night; world.sunSp.material.opacity = 1 - k;
   world.clouds.forEach(cl => (cl.material.opacity = 0.95 * (1 - 0.75 * k)));
 }
+function setDoors(k) { for (const d of world.doorLeaves) d.hinge.rotation.y = d.s * k * 1.85; }
 function setGlow(k) { world.doorGlow.material.opacity = 0.95 * k; world.lamp.intensity = 1.3 * k; }
 
 /* ---- the cast: the farmer, the racers and their babies ---- */
@@ -817,112 +826,145 @@ function screenSplash() { if (reduced) return; dropsEl.classList.remove('show');
 const capEl = $('caption'), bannerOv = $('bannerOv'), bannerTxt = $('bannerTxt'), countOv = $('countOv'), countTxt = $('countTxt'), fadeOv = $('fadeOv'), startOv = $('startOv'), startBtn = $('startBtn');
 const VO_FILES = {
   /* VO-BEGIN */
-  "Good morning, Wilbur!": 'vo/b09c0e2f59.mp3',
-  "Good morning, Daisy!": 'vo/089f35adad.mp3',
-  "Good morning, Woolly!": 'vo/19c4cf0e6b.mp3',
-  "Good morning, Henrietta!": 'vo/afec1c381a.mp3',
-  "Good morning, Buttercup!": 'vo/fd942da7f5.mp3',
-  "Good morning, Billy!": 'vo/4e595a1daf.mp3',
-  "Good morning, Puddles!": 'vo/5a6902a85f.mp3',
-  "Good morning, Hoppy!": 'vo/a5e1b8495d.mp3',
-  "Cock-a-doodle-doo! Good morning, farm!": 'vo/9def4ce11f.mp3',
-  "Shh. The animals are still sleeping.": 'vo/d1c4ce2d2f.mp3',
-  "Tap an animal to wake it up!": 'vo/3814b08a37.mp3',
-  "Who else is sleeping?": 'vo/bbe54dec75.mp3',
-  "Wake up another one!": 'vo/584f752dba.mp3',
-  "Tap a sleepy animal!": 'vo/c3487421da.mp3',
-  "Everybody is awake! Good morning, everybody!": 'vo/7c8f9d72fb.mp3',
-  "Yum yum! Oink oink!": 'vo/112012f767.mp3',
-  "Yum yum! Moo!": 'vo/8b8fb1617c.mp3',
-  "Yum yum! Baa!": 'vo/f9321e7544.mp3',
-  "Yum yum! Bawk bawk!": 'vo/8f5709086c.mp3',
-  "Crunch crunch! Neigh!": 'vo/7896926da4.mp3',
-  "Yum yum! Meh-eh-eh!": 'vo/2ac28042eb.mp3',
-  "Yum yum! Quack quack!": 'vo/bc513fffbe.mp3',
-  "Got it! Ribbit!": 'vo/68154c86ca.mp3',
-  "Hoppy wants a bug! Bzzz!": 'vo/81f0410eb4.mp3',
-  "Feeding time! Who's hungry?": 'vo/c12e6228f2.mp3',
-  "Tap a hungry animal to feed it!": 'vo/61825901b9.mp3',
-  "Who is still hungry?": 'vo/c350ea89b8.mp3',
-  "Feed another one!": 'vo/18cbcb6480.mp3',
-  "Tap a hungry tummy!": 'vo/eed6ba2ca7.mp3',
-  "Everybody is full. Thank you!": 'vo/af18683674.mp3',
-  "Wilbur and the piglets found a big mud puddle!": 'vo/8781756170.mp3',
-  "Tap a piggy to jump in the mud!": 'vo/ba719850f2.mp3',
-  "Tap the next piggy!": 'vo/d0178a989a.mp3',
-  "Splish!": 'vo/35c75a1487.mp3',
-  "Splash!": 'vo/15b3c68160.mp3',
-  "Sploosh!": 'vo/58549ce259.mp3',
-  "Muddy, muddy piggies!": 'vo/c192628cca.mp3',
-  "Uh oh! Bath time, piggies!": 'vo/2bd00cf30f.mp3',
-  "Tap a muddy piggy to wash it!": 'vo/25d99f7eb4.mp3',
-  "Splash! Tap again!": 'vo/73fe78ace1.mp3',
-  "Scrub-a-dub-dub!": 'vo/74f05a07c9.mp3',
-  "More bubbles!": 'vo/8372a9462d.mp3',
-  "Squeaky clean piggies!": 'vo/97b1e8f2f2.mp3',
-  "Time to bring the sheep home!": 'vo/927b4c97b8.mp3',
-  "Tap a sheep to send it home!": 'vo/0140a0c31f.mp3',
-  "Tap another sheep!": 'vo/2f2900d1b5.mp3',
-  "Who is next?": 'vo/afed67be85.mp3',
-  "Baa! Tap a sheep!": 'vo/962971d028.mp3',
-  "Oh! Billy the goat wants to come too!": 'vo/bcd9036771.mp3',
-  "Tap Billy!": 'vo/7408d9f778.mp3',
-  "Everybody is home! Hooray!": 'vo/4b63fca242.mp3',
-  "Two little piglets are lost!": 'vo/7793a1f7dd.mp3',
-  "Here I am, says Wilbur!": 'vo/a89bd08455.mp3',
-  "Wilbur found the piglets! Hooray!": 'vo/7b56ac80ce.mp3',
-  "The little duckling is lost!": 'vo/54a801d057.mp3',
-  "Here I am, says Puddles!": 'vo/6f734a00c6.mp3',
-  "Puddles found the duckling! Quack quack!": 'vo/60cf38c0de.mp3',
-  "The little calf is lost!": 'vo/0b92640138.mp3',
-  "Here I am, says Daisy!": 'vo/9f21bb836b.mp3',
-  "Daisy found the calf! Moo!": 'vo/e259a8535d.mp3',
-  "The little froglet is lost!": 'vo/07817377dc.mp3',
-  "Here I am, says Hoppy!": 'vo/e1c7afaf31.mp3',
-  "Hoppy found the froglet! Ribbit!": 'vo/d1bebdc10f.mp3',
-  "The little lamb is lost!": 'vo/5e5019881f.mp3',
-  "Here I am, says Woolly!": 'vo/26cf2f37ff.mp3',
-  "Woolly found the lamb! Baa!": 'vo/8b79ca4b0f.mp3',
-  "The little chick is lost!": 'vo/ac4b76a0e1.mp3',
-  "Here I am, says Henrietta!": 'vo/4b47f9dfbb.mp3',
-  "Henrietta found the chick! Peep peep!": 'vo/6e82afdfe8.mp3',
-  "Some babies got lost on the farm!": 'vo/088dab45ef.mp3',
-  "Tap the baby to call Mama!": 'vo/9309feb8e5.mp3',
-  "Tap Mama!": 'vo/17cab17e52.mp3',
-  "Everybody found their mama!": 'vo/8bdfe44b0b.mp3',
-  "Night night, Buttercup!": 'vo/df2f273130.mp3',
-  "Night night, Daisy and the calf!": 'vo/fa1fca3335.mp3',
-  "Night night, Billy!": 'vo/baf578d3d6.mp3',
-  "Night night, sheep!": 'vo/1ecb6f64bf.mp3',
-  "Night night, Wilbur and the piglets!": 'vo/73a1d7d315.mp3',
-  "Night night, Henrietta and the chick!": 'vo/b4c977ad47.mp3',
-  "The sun is going down. Time for bed, animals!": 'vo/348b2cea5b.mp3',
-  "Tap an animal to tuck it into bed!": 'vo/49f92b2b6e.mp3',
-  "Who else is sleepy?": 'vo/b8247b1ecc.mp3',
-  "Tap the next sleepy animal!": 'vo/4bb64a44aa.mp3',
-  "Who goes to bed next?": 'vo/5aca54c144.mp3',
-  "The ducks and frogs sleep by the pond.": 'vo/f486c41c34.mp3',
-  "Tap the ducks!": 'vo/bfe7616abb.mp3',
-  "Float, float on the pond. Quack!": 'vo/c4372b9421.mp3',
-  "Tap the frogs!": 'vo/4059d31a91.mp3',
-  "Hop onto a lily pad! Ribbit!": 'vo/23c02e8c99.mp3',
-  "Tap the barn to turn off the light!": 'vo/85a47ed9d9.mp3',
-  "Good night, farm!": 'vo/c51a485f58.mp3',
-  "Good night, Violet!": 'vo/087d6e06fa.mp3',
-  "Good morning!": 'vo/33e8886999.mp3',
-  "Feeding Time": 'vo/00bc20f41e.mp3',
-  "Muddy Pig Bath": 'vo/4d331b0f35.mp3',
-  "Mama and Baby": 'vo/daf317a692.mp3',
-  "The end! Tap an animal, or pick another game.": 'vo/ae0e304e69.mp3',
-  "One!": 'vo/27141a590f.mp3',
-  "Two!": 'vo/4a908e1cd3.mp3',
-  "Three!": 'vo/0c111972e9.mp3',
-  "Four!": 'vo/bed03137a7.mp3',
-  "Five!": 'vo/b495566271.mp3',
-  "Six!": 'vo/b8df22469c.mp3',
-  "Seven!": 'vo/9b81dc9d9e.mp3',
-  "Round-Up": 'vo/46dd651111.mp3',
-  "Bedtime": 'vo/e3cb8bd6bf.mp3',
+  "Good morning, Wilbur!": 'vo/3cfbe5eadb.mp3',
+  "Good morning, Daisy!": 'vo/981d09daf7.mp3',
+  "Good morning, Woolly!": 'vo/2e47665afb.mp3',
+  "Good morning, Henrietta!": 'vo/323216c9b0.mp3',
+  "Good morning, Buttercup!": 'vo/1c2a118c4f.mp3',
+  "Good morning, Billy!": 'vo/0ec3f3b1f0.mp3',
+  "Good morning, Puddles!": 'vo/f0f61e533a.mp3',
+  "Good morning, Hoppy!": 'vo/d62dd7ccc4.mp3',
+  "Cock-a-doodle-doo! Good morning, farm!": 'vo/cb9dc4eb7d.mp3',
+  "Shh. The animals are still sleeping.": 'vo/0fb395c0cf.mp3',
+  "Tap an animal to wake it up!": 'vo/8589aa4bda.mp3',
+  "Who else is sleeping?": 'vo/d47a9df42b.mp3',
+  "Wake up another one!": 'vo/45d9857110.mp3',
+  "Tap a sleepy animal!": 'vo/04dfd68eeb.mp3',
+  "Everybody is awake! Good morning, everybody!": 'vo/a51faa0711.mp3',
+  "Yum yum! Oink oink!": 'vo/658ac7f811.mp3',
+  "Yum yum! Moo!": 'vo/225975b00e.mp3',
+  "Yum yum! Baa!": 'vo/b32c95942b.mp3',
+  "Yum yum! Bawk bawk!": 'vo/c8fcc954eb.mp3',
+  "Crunch crunch! Neigh!": 'vo/f28a235263.mp3',
+  "Yum yum! Meh-eh-eh!": 'vo/4996608c59.mp3',
+  "Yum yum! Quack quack!": 'vo/5a6555fbba.mp3',
+  "Got it! Ribbit!": 'vo/866ad7f1bd.mp3',
+  "Hoppy wants a bug! Bzzz!": 'vo/005c9299f3.mp3',
+  "Feeding time! Who's hungry?": 'vo/ed83b11c58.mp3',
+  "Tap a hungry animal to feed it!": 'vo/38c819a07d.mp3',
+  "Who is still hungry?": 'vo/e0c549a073.mp3',
+  "Feed another one!": 'vo/434550e818.mp3',
+  "Tap a hungry tummy!": 'vo/b10864c985.mp3',
+  "Everybody is full. Thank you!": 'vo/91a9e3f37b.mp3',
+  "Wilbur and the piglets found a big mud puddle!": 'vo/be02f435a0.mp3',
+  "Tap a piggy to jump in the mud!": 'vo/8b06a88992.mp3',
+  "Tap the next piggy!": 'vo/933988eb6f.mp3',
+  "Splish!": 'vo/b29bfeb167.mp3',
+  "Splash!": 'vo/844e18c88f.mp3',
+  "Sploosh!": 'vo/a9325863d1.mp3',
+  "Muddy, muddy piggies!": 'vo/279f040b95.mp3',
+  "Uh oh! Bath time, piggies!": 'vo/f07412884a.mp3',
+  "Tap a muddy piggy to wash it!": 'vo/2b513ba5dc.mp3',
+  "Splash! Tap again!": 'vo/425653aa1c.mp3',
+  "Scrub-a-dub-dub!": 'vo/6454ef3e31.mp3',
+  "More bubbles!": 'vo/d8bace31ff.mp3',
+  "Squeaky clean piggies!": 'vo/440b1a1a30.mp3',
+  "Time to bring the sheep home!": 'vo/3faba74c07.mp3',
+  "Tap a sheep to send it home!": 'vo/251a3f7f35.mp3',
+  "Tap another sheep!": 'vo/22521bd7d7.mp3',
+  "Who is next?": 'vo/435f3c5c79.mp3',
+  "Baa! Tap a sheep!": 'vo/a28c748cc8.mp3',
+  "Oh! Billy the goat wants to come too!": 'vo/4d03e23999.mp3',
+  "Tap Billy!": 'vo/c31571b854.mp3',
+  "Everybody is home! Hooray!": 'vo/f9deb61507.mp3',
+  "Two little piglets are lost!": 'vo/1627f0bd5d.mp3',
+  "Here I am, says Wilbur!": 'vo/72016732bd.mp3',
+  "Wilbur found the piglets! Hooray!": 'vo/ae74a2800f.mp3',
+  "The little duckling is lost!": 'vo/35c0785600.mp3',
+  "Here I am, says Puddles!": 'vo/8b63d0e0f6.mp3',
+  "Puddles found the duckling! Quack quack!": 'vo/ace074dd36.mp3',
+  "The little calf is lost!": 'vo/4431706d2e.mp3',
+  "Here I am, says Daisy!": 'vo/933e372d1d.mp3',
+  "Daisy found the calf! Moo!": 'vo/f67389b091.mp3',
+  "The little froglet is lost!": 'vo/5fede1cf27.mp3',
+  "Here I am, says Hoppy!": 'vo/5192675aeb.mp3',
+  "Hoppy found the froglet! Ribbit!": 'vo/7326be789f.mp3',
+  "The little lamb is lost!": 'vo/361970cb30.mp3',
+  "Here I am, says Woolly!": 'vo/ff7032a68b.mp3',
+  "Woolly found the lamb! Baa!": 'vo/6222ebb7cc.mp3',
+  "The little chick is lost!": 'vo/0f2f842ac2.mp3',
+  "Here I am, says Henrietta!": 'vo/a647955345.mp3',
+  "Henrietta found the chick! Peep peep!": 'vo/4dd8b7e060.mp3',
+  "Some babies got lost on the farm!": 'vo/1b82a05e2d.mp3',
+  "Tap the baby to call Mama!": 'vo/dd91aae236.mp3',
+  "Tap Mama!": 'vo/58f06a6987.mp3',
+  "Everybody found their mama!": 'vo/cfa7c1a00d.mp3',
+  "Night night, Buttercup!": 'vo/589df0e00f.mp3',
+  "Night night, Daisy and the calf!": 'vo/6289473a51.mp3',
+  "Night night, Billy!": 'vo/48496a5368.mp3',
+  "Night night, sheep!": 'vo/b3d16da59b.mp3',
+  "Night night, Wilbur and the piglets!": 'vo/26402cec32.mp3',
+  "Night night, Henrietta and the chick!": 'vo/7b4fdba6b9.mp3',
+  "The sun is going down. Time for bed, animals!": 'vo/594fcb5012.mp3',
+  "Tap an animal to tuck it into bed!": 'vo/77f9a34ffd.mp3',
+  "Who else is sleepy?": 'vo/7a954c27a4.mp3',
+  "Tap the next sleepy animal!": 'vo/eadacfb8a6.mp3',
+  "Who goes to bed next?": 'vo/c7fa5eb981.mp3',
+  "The ducks and frogs sleep by the pond.": 'vo/2944ed48c5.mp3',
+  "Tap the ducks!": 'vo/4cf62287c9.mp3',
+  "Float, float on the pond. Quack!": 'vo/281a40d168.mp3',
+  "Tap the frogs!": 'vo/b7d412268c.mp3',
+  "Hop onto a lily pad! Ribbit!": 'vo/ae42e4262f.mp3',
+  "Tap the barn to turn off the light!": 'vo/5bfb478941.mp3',
+  "Good night, farm!": 'vo/b5f6e967dc.mp3',
+  "Good night, Violet!": 'vo/2f81f51382.mp3',
+  "Good morning!": 'vo/ce784fba49.mp3',
+  "Feeding Time": 'vo/94b1c7f045.mp3',
+  "Muddy Pig Bath": 'vo/0f61f4a43d.mp3',
+  "Mama and Baby": 'vo/8310dd3588.mp3',
+  "The end! Tap an animal, or pick another game.": 'vo/717c541428.mp3',
+  "One!": 'vo/2d33d39ed5.mp3',
+  "Two!": 'vo/c725cd1ef3.mp3',
+  "Three!": 'vo/a2f134f6a6.mp3',
+  "Four!": 'vo/dacdca9ef0.mp3',
+  "Five!": 'vo/d6b575227c.mp3',
+  "Six!": 'vo/22775bb811.mp3',
+  "Seven!": 'vo/4a9e017bbe.mp3',
+  "Who says oink oink?": 'vo/e20f056510.mp3',
+  "It's Wilbur the pig!": 'vo/4badf22cd9.mp3',
+  "Who says quack quack?": 'vo/47fa1e6772.mp3',
+  "It's Puddles the duck!": 'vo/336ac70688.mp3',
+  "Who says baa?": 'vo/8064c3be4f.mp3',
+  "It's Woolly the sheep!": 'vo/a84f90c8e3.mp3',
+  "Who says ribbit?": 'vo/02794dcd8f.mp3',
+  "It's Hoppy the frog!": 'vo/3fa6a94370.mp3',
+  "Who says bawk bawk?": 'vo/a842a0840b.mp3',
+  "It's Henrietta the chicken!": 'vo/b3c43ff3b3.mp3',
+  "Some animals are hiding! Listen!": 'vo/b53c4e2097.mp3',
+  "Tap the wiggly bush!": 'vo/aa39e57636.mp3',
+  "You found everybody! Hooray!": 'vo/b5f457a6c3.mp3',
+  "Pond party! Hoppy loves to hop!": 'vo/8fd511b3aa.mp3',
+  "Hop again!": 'vo/97dd388bd0.mp3',
+  "Another lily pad!": 'vo/1f545efc19.mp3',
+  "Hop, hop, hop!": 'vo/01a3cc6f10.mp3',
+  "Tap a lily pad to make Hoppy hop!": 'vo/3e237a4fed.mp3',
+  "Now the ducks! Splash time!": 'vo/1174cd2823.mp3',
+  "Splash again!": 'vo/6979144583.mp3',
+  "Dive, duck, dive!": 'vo/8cb8a3dd65.mp3',
+  "Again! Tap a duck!": 'vo/d295788cd3.mp3',
+  "Tap a duck to make it dive!": 'vo/d9972aec78.mp3',
+  "Bzzz! Bugs are buzzing!": 'vo/df4978f155.mp3',
+  "Another bug! Tap it!": 'vo/7b41eec5b5.mp3',
+  "Tap the buzzing bug!": 'vo/19697f85ff.mp3',
+  "Yum! Ribbit!": 'vo/ed24d7564e.mp3',
+  "Got it!": 'vo/140b70eec3.mp3',
+  "Gulp! Ribbit!": 'vo/3309a2a176.mp3',
+  "What a pond party!": 'vo/e315c7656d.mp3',
+  "Tap the barn to close the door!": 'vo/9af92b62f9.mp3',
+  "Who's Hiding?": 'vo/c0e85c9ec5.mp3',
+  "Pond Party": 'vo/8b06ba5c50.mp3',
+  "Round-Up": 'vo/8b3c62827d.mp3',
+  "Bedtime": 'vo/cfd0d6550a.mp3',
   /* VO-END */
 };
 const voData = {}, voBufs = {};
@@ -977,7 +1019,7 @@ function stepTurn() {
   rings.forEach((m, i) => {
     const t = ts[i]; m.visible = !!t && (t.spot || t.root.visible); if (!m.visible) return;
     const p = spotPos(t), pulse = Math.sin(real * 5 + i);
-    m.position.set(p.x, 0.08, t.spot ? p.z + 1.5 : p.z); m.scale.setScalar(ringSize(t) * (1 + 0.12 * pulse)); m.material.opacity = 0.6 + 0.3 * pulse;
+    m.position.set(p.x, 0.08, t.spot ? p.z + (t.dz ?? 1.5) : p.z); m.scale.setScalar(ringSize(t) * (1 + 0.12 * pulse)); m.material.opacity = 0.6 + 0.3 * pulse;
   });
   if (!arrow) {
     arrow = spriteOf(canvasTex(128, 160, c => { c.lineJoin = 'round'; c.lineWidth = 12; c.strokeStyle = '#7a4b00'; c.fillStyle = '#ffd23f'; c.beginPath(); c.moveTo(40, 12); c.lineTo(88, 12); c.lineTo(88, 82); c.lineTo(118, 82); c.lineTo(64, 148); c.lineTo(10, 82); c.lineTo(40, 82); c.closePath(); c.stroke(); c.fill(); }), 1, { depthTest: false, fog: false });
@@ -1005,7 +1047,7 @@ function resetStage() {
   [cast.pig, ...cast.piglets].forEach(a => setMud(a, 0));
   for (const f of world.foods || []) scene.remove(f); world.foods = [];
   const F = cast.farmer.parts.farmer; F.bucket.visible = false; F.hose.visible = false;
-  world.troughs.visible = true; setSky(0); setGlow(0); countOv.hidden = true; bannerOv.hidden = true; capEl.textContent = ''; cam.follow = null; turn = null; hush();
+  world.troughs.visible = true; setSky(0); setGlow(0); setDoors(0); countOv.hidden = true; bannerOv.hidden = true; capEl.textContent = ''; cam.follow = null; turn = null; hush();
 }
 const YARD = ['horse', 'cow', 'goat', 'sheep', 'pig', 'chicken', 'duck', 'frog'];
 const GOOD_MORNING = { pig: 'Good morning, Wilbur!', cow: 'Good morning, Daisy!', sheep: 'Good morning, Woolly!', chicken: 'Good morning, Henrietta!', horse: 'Good morning, Buttercup!', goat: 'Good morning, Billy!', duck: 'Good morning, Puddles!', frog: 'Good morning, Hoppy!' };
@@ -1053,19 +1095,6 @@ function makeFood(kind, x, z) {
   if (kind === 'apple') for (let i = 0; i < 3; i++) { at(sph(0.16, 0xe23b2e, {}, 10), -0.45 + i * 0.45, 0.14, rnd(-0.1, 0.1), g); at(noShadow(cyl(0.015, 0.015, 0.1, 0x5a3b1e, 4)), -0.45 + i * 0.45, 0.32, 0, g); }
   return g;
 }
-async function frogSnack(frog, x) {
-  const fly = grp(x, 1.4, TROUGH_Z, scene); world.foods.push(fly); at(noShadow(sph(0.08, 0x222222, {}, 6)), 0, 0, 0, fly);
-  const wingM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, side: THREE.DoubleSide });
-  const wings = [-1, 1].map(s => { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.09), wingM); w.position.set(0, 0.06, s * 0.08); fly.add(w); return w; });
-  let caught = false; play('buzz');
-  tick(() => { if (caught) return false; fly.position.set(x + Math.sin(time * 2.6) * 0.9, 1.3 + Math.sin(time * 7) * 0.18, TROUGH_Z - 0.6 + Math.cos(time * 2.1) * 0.5); wings.forEach((w, i) => (w.rotation.x = Math.sin(real * 60 + i * 3) * 0.8)); });
-  say('Hoppy wants a bug! Bzzz!'); frog.face = FACE_CAM; await walkTo(frog, x, TROUGH_Z - 1.6, 1.5); await wait(1.4);
-  // zap! the tongue reaches the fly and brings it back
-  caught = true; const from = headPos(frog).add(V(0, -0.05, 0.15)), to = fly.position.clone(), dir = to.clone().sub(from), len = dir.length();
-  const tg = new THREE.CylinderGeometry(0.035, 0.05, 1, 6); tg.translate(0, 0.5, 0); const tongue = new THREE.Mesh(tg, mat(0xff6f91)); tongue.position.copy(from); tongue.quaternion.setFromUnitVectors(V(0, 1, 0), dir.normalize()); scene.add(tongue); world.foods.push(tongue);
-  play('boing'); await tween(0.5, k => { const e = Math.sin(Math.PI * k); tongue.scale.set(1, Math.max(0.01, e * len), 1); if (k > 0.5) fly.position.lerpVectors(from, to, e); });
-  scene.remove(tongue); scene.remove(fly); play('munch');
-}
 async function feedOne(a, food, x) {
   if (food === 'fly') await frogSnack(a, x);
   else {
@@ -1092,6 +1121,90 @@ async function sceneFeed() {
   await Promise.all(meals); await wait(0.8);
   const F = cast.farmer; F.waving = true; play('cheer'); say('Everybody is full. Thank you!');
   FEED.forEach(([id], i) => setTimeout(() => greet(cast[id]), 200 + i * 280)); await wait(4); F.waving = false; stopMusic(1.2);
+}
+
+const HIDERS = [
+  { id: 'pig', ask: 'Who says oink oink?', its: "It's Wilbur the pig!" },
+  { id: 'duck', ask: 'Who says quack quack?', its: "It's Puddles the duck!" },
+  { id: 'sheep', ask: 'Who says baa?', its: "It's Woolly the sheep!" },
+  { id: 'frog', ask: 'Who says ribbit?', its: "It's Hoppy the frog!" },
+  { id: 'chicken', ask: 'Who says bawk bawk?', its: "It's Henrietta the chicken!" },
+];
+function setupHide() {
+  world.bushes = HIDERS.map((h, i) => {
+    const x = -8.4 + i * 4.2, z = 3, g = grp(x, 0, z, scene); world.foods.push(g);
+    [[0, 1.15, 0, 1.3], [-1, 0.85, 0.25, 1], [1, 0.9, 0.2, 1.05], [0.25, 1.9, -0.1, 0.9], [-0.5, 0.5, 0.7, 0.75], [0.6, 0.5, 0.75, 0.7]].forEach(([bx, by, bz, r]) => at(sph(r, pick([0x4f9a3f, 0x5aa846, 0x478c39]), {}, 14), bx, by, bz, g));
+    place(cast[h.id], x, z - 1.7, FACE_CAM); return g;
+  });
+  shot(0, 3.8, 18.5, 0, 1.3, 1);
+}
+async function sceneHide() {
+  await talk('Some animals are hiding! Listen!');
+  for (let i = 0; i < HIDERS.length; i++) {
+    const h = HIDERS[i], a = cast[h.id], b = world.bushes[i];
+    let hiding = true, next = time;
+    // the bush wiggles and the animal keeps calling until she taps it
+    tick(() => { if (!hiding) { b.rotation.z = 0; return false; } b.rotation.z = Math.sin(real * 14) * 0.05; if (time > next) { next = time + 4.5; play(a.voice, 1, a.pitch); } });
+    await wait(1.2); await talk(h.ask, 0.1);
+    await yourTurn([{ spot: true, p: V(b.position.x, 2.6, b.position.z), size: 1.7 }], 'Tap the wiggly bush!');
+    hiding = false; burst(V(b.position.x, 1.5, b.position.z), [0x4f9a3f, 0x5aa846, 0x8fd06b], 14, 2, 4); play('whoosh');
+    await leapTo(a, b.position.x + 0.3, b.position.z + 2.3, 1.8, 0.7); a.face = FACE_CAM; greet(a, 3); say(h.its); await wait(2.4);
+  }
+  say('You found everybody! Hooray!'); play('cheer'); HIDERS.forEach((h, i) => setTimeout(() => greet(cast[h.id]), i * 260)); await wait(3.5);
+}
+
+function makeFly(around) {
+  const fly = grp(0, 0, 0, scene); world.foods.push(fly); at(noShadow(sph(0.09, 0x222222, {}, 6)), 0, 0, 0, fly);
+  const wingM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, side: THREE.DoubleSide });
+  const wings = [-1, 1].map(s => { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.1), wingM); w.position.set(0, 0.07, s * 0.09); fly.add(w); return w; });
+  const ph = rnd(0, TAU); let free = true; play('buzz');
+  tick(() => { if (!free || !fly.parent) return false; const c = around(); fly.position.set(c.x + Math.sin(time * 2.6 + ph) * 0.9, c.y + Math.sin(time * 7) * 0.18, c.z + Math.cos(time * 2.1 + ph) * 0.5); wings.forEach((w, i) => (w.rotation.x = Math.sin(real * 60 + i * 3) * 0.8)); });
+  return { fly, catch: () => (free = false) };
+}
+// zap! the frog's tongue reaches the fly and brings it back
+async function zap(frog, F) {
+  F.catch(); const fly = F.fly, from = headPos(frog).add(V(0, -0.05, 0.15)), to = fly.position.clone(), dir = to.clone().sub(from), len = dir.length();
+  const tg = new THREE.CylinderGeometry(0.035, 0.05, 1, 6); tg.translate(0, 0.5, 0); const tongue = new THREE.Mesh(tg, mat(0xff6f91)); tongue.position.copy(from); tongue.quaternion.setFromUnitVectors(V(0, 1, 0), dir.normalize()); scene.add(tongue); world.foods.push(tongue);
+  frog.face = faceDir(to.x - from.x, to.z - from.z);
+  play('boing'); await tween(0.5, k => { const e = Math.sin(Math.PI * k); tongue.scale.set(1, Math.max(0.01, e * len), 1); if (k > 0.5) fly.position.lerpVectors(from, to, e); });
+  scene.remove(tongue); scene.remove(fly); play('munch');
+}
+async function frogSnack(frog, x) {
+  say('Hoppy wants a bug! Bzzz!'); frog.face = FACE_CAM; const F = makeFly(() => V(x, 1.3, TROUGH_Z - 0.6));
+  await walkTo(frog, x, TROUGH_Z - 1.6, 1.5); await wait(1.4); await zap(frog, F);
+}
+async function duckDive(d) {
+  const q = posOf(d); play('splash'); burst(V(q.x, 0.2, q.z), WATER, 14, 2, 4);
+  await tween(1, k => { const e = Math.sin(Math.PI * k); d.lift = -0.5 * d.scale * e; d.lean = -0.8 * e; });
+  d.lift = 0; d.lean = 0; for (let i = 0; i < 6; i++) bubble(q.x + rnd(-0.4, 0.4), 0.2, q.z + rnd(-0.4, 0.4)); burst(V(q.x, 0.3, q.z), WATER, 10, 1.5, 3); greet(d, 1);
+}
+function setupPond() {
+  const P = world.pads;
+  place(cast.frog, P[0].x, P[0].z, 0); place(cast.froglet, POND.x - 7.2, POND.z + 2.6, 0);
+  place(cast.duck, POND.x + 1.2, POND.z + 1.2, Math.PI); place(cast.duckling, POND.x + 2.4, POND.z + 2.2, Math.PI);
+  shot(POND.x, 3.6, POND.z + 9, POND.x, 0.2, POND.z - 0.3);
+}
+async function scenePond() {
+  music('hoedown', 84, true); musicLevel(MUSIC_VOL);
+  await talk('Pond party! Hoppy loves to hop!');
+  let on = 0;
+  for (let k = 0; k < 4; k++) {
+    const pads = world.pads.map((q, i) => ({ spot: true, p: V(q.x, 0.3, q.z), size: 0.95, dz: 0, i })).filter(t => t.i !== on);
+    const t = await yourTurn(pads, k ? pick(['Hop again!', 'Another lily pad!', 'Hop, hop, hop!']) : 'Tap a lily pad to make Hoppy hop!');
+    on = t.i; await leapTo(cast.frog, t.p.x, t.p.z, 1.4, 0.7); play('splash'); burst(V(t.p.x, 0.2, t.p.z), WATER, 10, 1.5, 3); greet(cast.frog, 1); cast.frog.face = FACE_CAM;
+  }
+  await talk('Now the ducks! Splash time!');
+  for (let k = 0; k < 4; k++) {
+    const d = await yourTurn([cast.duck, cast.duckling], k ? pick(['Splash again!', 'Dive, duck, dive!', 'Again! Tap a duck!']) : 'Tap a duck to make it dive!');
+    await duckDive(d);
+  }
+  await talk('Bzzz! Bugs are buzzing!');
+  for (let k = 0; k < 3; k++) {
+    const F = makeFly(() => headPos(cast.frog).add(V(0, 1.1, 0.9)));
+    await yourTurn([{ spot: true, p: F.fly.position, size: 0.75, dz: 0 }], k ? 'Another bug! Tap it!' : 'Tap the buzzing bug!');
+    await zap(cast.frog, F); say(pick(['Yum! Ribbit!', 'Got it!', 'Gulp! Ribbit!'])); greet(cast.frog, 2); await wait(1.4);
+  }
+  say('What a pond party!'); play('cheer'); [cast.frog, cast.froglet, cast.duck, cast.duckling].forEach((a, i) => setTimeout(() => greet(a, 2), i * 300)); await wait(3.6); stopMusic(1.2);
 }
 
 function setupBath() {
@@ -1210,7 +1323,8 @@ function setupBed() {
 async function sceneBed() {
   music('twinkle', 66, true); musicLevel(MUSIC_VOL);
   tween(9, k => { setSky(0.2 + 0.8 * k); setGlow(clamp(k * 1.6 - 0.4, 0, 1)); });
-  await talk('The sun is going down. Time for bed, animals!', 1);
+  await talk('The sun is going down. Time for bed, animals!', 0.2);
+  play('creak'); await tween(1.6, k => setDoors(Math.sin(k * Math.PI / 2))); await wait(0.4);
   const groups = [[cast.horse], [cast.cow, cast.calf], [cast.goat], [cast.sheep, ...cast.flock, cast.lamb], [cast.pig, ...cast.piglets], [cast.chicken, cast.chick]];
   const go = async (m, j) => { await wait(j * 0.4); m.intoBarn = true; await walkTo(m, DOOR.x + rnd(-1.6, 1.6), DOOR.z + 1.2, 2.3); return walkTo(m, posOf(m).x, BARN.z, 2.3); };
   let left = groups.slice(), first = true; const walks = [];
@@ -1230,8 +1344,8 @@ async function sceneBed() {
   walkTo(cast.frog, pad.x - 0.25, pad.z, 1.6); await walkTo(cast.froglet, pad.x + 0.35, pad.z + 0.25, 1.6); call(cast.frog, 0.5); await wait(1.2);
   every(1.1, 600, () => { for (const a of [cast.duck, cast.frog]) { const p = posOf(a); zzz(p.x, 1.3, p.z, 0.6); } });
   shot(-2, 9, 26, -12, 3, -10, 0.5); await wait(2.5);
-  await yourTurn([{ spot: true, p: V(BARN.x, 3.4, BARN.z + 6), size: 3.4 }], 'Tap the barn to turn off the light!');
-  play('blip'); await tween(1.2, k => setGlow(1 - k));
+  await yourTurn([{ spot: true, p: V(BARN.x, 3.4, BARN.z + 6), size: 3.4 }], 'Tap the barn to close the door!');
+  play('creak'); await tween(1.6, k => setDoors(1 - Math.sin(k * Math.PI / 2))); play('thud'); await tween(1, k => setGlow(1 - k));
   every(0.9, 600, () => zzz(BARN.x + 0.5, 8.5, BARN.z + 6, 1.4));
   shot(6, 12, 40, -8, 3, -10, 0.3);
   await talk('Good night, farm!', 2.5);
@@ -1241,7 +1355,9 @@ async function sceneBed() {
 const SCENES = [
   { id: 'morning', title: 'Good morning!', emoji: '🌅', setup: setupMorning, run: sceneMorning },
   { id: 'feed', title: 'Feeding Time', emoji: '🥕', setup: setupFeed, run: sceneFeed },
+  { id: 'hide', title: "Who's Hiding?", emoji: '🌳', setup: setupHide, run: sceneHide },
   { id: 'bath', title: 'Muddy Pig Bath', emoji: '🐷', setup: setupBath, run: sceneBath },
+  { id: 'pond', title: 'Pond Party', emoji: '🐸', setup: setupPond, run: scenePond },
   { id: 'roundup', title: 'Round-Up', emoji: '🐑', setup: setupRoundUp, run: sceneRoundUp },
   { id: 'mama', title: 'Mama and Baby', emoji: '🐣', setup: setupMama, run: sceneMama },
   { id: 'bed', title: 'Bedtime', emoji: '🌙', setup: setupBed, run: sceneBed },

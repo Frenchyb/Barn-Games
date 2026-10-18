@@ -23,4 +23,4 @@ These CC0 Freesound recordings came trimmed and loudness-matched from Circuit-St
 Day on the Farm uses all of these; the race still uses only the first four. Chicken, goat, duck and frog models and all music are still built in code.
 
 ## Narrator (`../day-on-the-farm/vo/`)
-Every line was spoken by the Kokoro TTS model (Apache 2.0, https://github.com/thewh1teagle/kokoro-onnx), voice af_heart, and saved as MP3.
+Every line was spoken by the Kokoro TTS model (Apache 2.0, https://github.com/thewh1teagle/kokoro-onnx), voice af_heart (full-precision model, speed 0.95), and saved as MP3.
