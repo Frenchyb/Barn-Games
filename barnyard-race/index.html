@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Barnyard Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<style>
+/* Layout: a sunny farm poster. The race track is the hero, the big GO button sits under it, the animal cards alongside. */
+:root{
+  color-scheme: light;
+  --sky:#bfe7ff; --sky-2:#8fd0ff; --cream:#fff8ea; --line:#e6d6b8;
+  --ink:#3d2a16; --muted:#8a704f; --barn:#d7413f; --barn-deep:#a52b2a;
+  --sun:#ffcc33; --sun-deep:#d9a21b; --pink:#ff8fb1;
+  --display:"Lilita One","Arial Rounded MT Bold",system-ui,sans-serif;
+  --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%;margin:0}
+body{background:var(--sky);background-image:linear-gradient(180deg,#9fd6ff 0%,#cfeeff 45%,#eaf7e3 100%);background-attachment:fixed;color:var(--ink);font:16px/1.5 var(--body);overflow-x:hidden}
+.app{max-width:1320px;margin:0 auto;padding-inline:clamp(16px,3vw,32px);padding-block:14px 48px;display:flex;flex-direction:column;gap:18px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand-name{font-family:var(--display);font-size:2rem;color:var(--barn);line-height:1.05;text-shadow:0 2px 0 #fff}
+.brand-sub{font-size:.75rem;text-transform:uppercase;letter-spacing:.16em;color:var(--muted);font-weight:900}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer}
+.btn{border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--ink);padding:.5em 1.05em;font-weight:800;font-size:.9rem}
+.btn:hover{border-color:var(--muted)}
+.btn.armed{border-color:var(--barn);color:var(--barn);background:#fff0ef}
+.primary{border-radius:999px;border:none;background:var(--sun);color:var(--ink);font-family:var(--display);font-weight:400;letter-spacing:.02em;padding:.55em 1.5em;font-size:1.55rem;box-shadow:0 7px 0 var(--sun-deep),0 12px 24px rgba(60,40,0,.2);transition:transform .08s,box-shadow .08s}
+.primary:active{transform:translateY(5px);box-shadow:0 2px 0 var(--sun-deep),0 4px 10px rgba(60,40,0,.2)}
+.primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+button:focus-visible,.card:focus-visible{outline:3px solid var(--barn);outline-offset:2px}
+h1,h2,p{margin:0}
+.race-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
+@media (max-width:1100px){.race-grid{grid-template-columns:minmax(0,1fr)}}
+.stage{display:flex;flex-direction:column;gap:14px;min-width:0}
+.eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:.78rem;color:var(--muted);font-weight:900}
+.headline{font-family:var(--display);font-weight:400;font-size:clamp(1.7rem,4.4vw,2.9rem);line-height:1.1}
+.headline .who{color:var(--barn)}
+.track-wrap{position:relative;border-radius:22px;overflow:hidden;border:4px solid #fff;background:var(--sky-2);box-shadow:0 18px 40px rgba(50,70,30,.25);min-height:240px}
+#gl canvas{display:block}
+.gl-fail{margin:0;padding:40px 24px;text-align:center;color:var(--muted);font-weight:800}
+.ov{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.ov[hidden]{display:none}
+.ov-count{font-family:var(--display);font-size:clamp(5rem,22vw,14rem);color:#fff;-webkit-text-stroke:3px var(--barn);text-shadow:0 8px 0 rgba(165,43,42,.9),0 14px 30px rgba(0,0,0,.25);line-height:1}
+.pop{animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.ov-banner{place-items:start center;padding-top:14px}
+.ov-banner span{background:#fff;border:4px solid var(--sun);color:var(--barn);font-family:var(--display);font-size:clamp(1.3rem,3.6vw,2.6rem);padding:.2em .9em;border-radius:999px;box-shadow:0 12px 30px rgba(0,0,0,.2);text-align:center;line-height:1.15;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+.ov-banner small{display:block;font-family:var(--body);font-weight:900;font-size:.5em;color:var(--muted)}
+.ov-flash{background:#fff;opacity:0}
+.ov-feed{position:absolute;left:14px;bottom:12px;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:72%}
+.feed-line{background:rgba(255,255,255,.93);color:var(--ink);border-radius:14px;padding:.35em .9em;font-weight:800;font-size:.95rem;box-shadow:0 4px 12px rgba(0,0,0,.12);animation:rise .4s ease-out}
+.feed-line b{color:var(--barn)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.controls{display:flex;flex-direction:column;gap:10px}
+.commentary{font-size:1.2rem;font-weight:800;min-height:1.5em}
+.actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:.9rem;font-weight:800}
+.panel{background:var(--cream);border:2px solid #fff;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0;box-shadow:0 10px 30px rgba(60,70,30,.12)}
+.panel h2{font-family:var(--display);font-weight:400;font-size:1.4rem}
+.lede{color:var(--muted);font-weight:800;font-size:.9rem}
+.cards{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
+.card{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;border-radius:16px;border:3px solid var(--line);background:#fff;padding:10px 8px 8px;text-align:center;cursor:pointer;user-select:none;transition:transform .1s}
+.card:hover{transform:translateY(-2px)}
+.card .face{font-size:2.5rem;line-height:1.1}
+.card .nm{font-weight:900;font-size:1rem}
+.card .kd{font-size:.74rem;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.card .rib{font-size:.85rem;min-height:1.3em;letter-spacing:-.12em;line-height:1.3}
+.card.out{opacity:.45;filter:grayscale(1)}
+.card .heart{position:absolute;top:5px;right:5px;border:none;background:#fff;border-radius:50%;width:30px;height:30px;font-size:1.05rem;line-height:1;opacity:.35;padding:0}
+.card .heart:hover,.card.fav .heart{opacity:1}
+.card.fav{border-color:var(--pink);box-shadow:0 0 0 3px #ffd5e2}
+.card.winner{border-color:var(--sun);box-shadow:0 0 0 4px #ffe9a3}
+.row-between{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.count{color:var(--muted);font-weight:900;font-size:.88rem}
+.link{border:none;background:none;color:var(--muted);text-decoration:underline;padding:0;font-size:.86rem;font-weight:800}
+.link:hover{color:var(--ink)}
+.msg{font-size:.9rem;color:var(--barn);font-weight:800;min-height:1.3em}
+:fullscreen .app{max-width:none;padding:10px 14px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="brand-name">The Barnyard Race</div><div class="brand-sub">Ready, set, moo!</div></div>
+    <div class="tools">
+      <button type="button" class="btn" id="soundBtn" aria-pressed="true">Sound on</button>
+      <button type="button" class="btn" id="fullBtn">Full screen</button>
+    </div>
+  </header>
+  <section aria-label="The race">
+    <div class="race-grid">
+      <div class="stage">
+        <div><p class="eyebrow" id="eyebrow">Ready to race</p><h1 class="headline" id="headline">Who will win the <span class="who">Barnyard Race</span>?</h1></div>
+        <div class="track-wrap" id="trackWrap">
+          <div id="gl" role="img" aria-label="Barnyard race track"></div>
+          <div class="ov" id="countOv" hidden><div class="ov-count" id="countTxt"></div></div>
+          <div class="ov ov-banner" id="bannerOv" hidden><span id="bannerTxt"></span></div>
+          <div class="ov ov-flash" id="flashOv"></div>
+          <div class="ov-feed" id="feedOv" aria-live="polite"></div>
+        </div>
+        <div class="controls">
+          <p class="commentary" id="commentary" aria-live="polite">Everybody is lining up by the barn!</p>
+          <div class="actions"><button type="button" class="primary" id="goBtn">Start the race!</button><span class="hint">or press the space bar</span></div>
+        </div>
+      </div>
+      <aside class="panel" aria-label="Racers">
+        <div class="row-between"><h2>Who's racing?</h2><span class="count" id="countLabel"></span></div>
+        <p class="lede">Tap an animal to put it in or out of the race. Tap the heart to cheer for a favorite.</p>
+        <ul class="cards" id="cards"></ul>
+        <p class="msg" id="msg"></p>
+        <div class="row-between"><span class="count">🏅 = a race won</span><button type="button" class="link" id="clearWins">Clear ribbons</button></div>
+      </aside>
+    </div>
+  </section>
+</div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script>
+// If the 3D engine can't download, the module below never runs; show the same message boot() would.
+setTimeout(() => { if (!window.__barnyardBooted) { const h = document.getElementById('gl'); if (h) h.innerHTML = '<p class="gl-fail">The 3D farm could not load. Check the connection and reload.</p>'; } }, 15000);
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+window.__barnyardBooted = true;
+// Keep the original r128 colour handling so the hand-built farm looks the same; revisit when real models land.
+THREE.ColorManagement.enabled = false;
+const $ = id => document.getElementById(id);
+const TAU = Math.PI * 2, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rnd = (a, b) => a + Math.random() * (b - a), pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const ANIMALS = [
+  { id: 'pig', name: 'Wilbur', kind: 'Pig', emoji: '🐷', say: 'Oink oink!', hex: '#f26b93' },
+  { id: 'cow', name: 'Daisy', kind: 'Cow', emoji: '🐮', say: 'Moo!', hex: '#8b5e3c' },
+  { id: 'sheep', name: 'Woolly', kind: 'Sheep', emoji: '🐑', say: 'Baa!', hex: '#5b8fd6' },
+  { id: 'chicken', name: 'Henrietta', kind: 'Chicken', emoji: '🐔', say: 'Bawk bawk!', hex: '#e8702a' },
+  { id: 'horse', name: 'Buttercup', kind: 'Horse', emoji: '🐴', say: 'Neigh!', hex: '#b8860b' },
+  { id: 'goat', name: 'Billy', kind: 'Goat', emoji: '🐐', say: 'Meh-eh-eh!', hex: '#6c7a7d' },
+  { id: 'duck', name: 'Puddles', kind: 'Duck', emoji: '🦆', say: 'Quack quack!', hex: '#2a9d8f' },
+  { id: 'frog', name: 'Hoppy', kind: 'Frog', emoji: '🐸', say: 'Ribbit ribbit!', hex: '#3fa34d' },
+];
+const byId = Object.fromEntries(ANIMALS.map(a => [a.id, a]));
+const KEY = 'barnyard-race-v1';
+const S = Object.assign({ sound: true, out: [], fav: null, wins: {}, races: 0 }, load());
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* ---------- Audio: recorded animal calls where we have them (sounds/, all CC0), everything else synthesised ---------- */
+let AC = null, master = null, musicBus = null, sfxBus = null, noiseBuf = null;
+function audio() {
+  if (!AC) {
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      master = AC.createGain(); master.gain.value = S.sound ? 0.8 : 0; master.connect(AC.destination);
+      musicBus = AC.createGain(); musicBus.gain.value = 0.36; musicBus.connect(master);
+      sfxBus = AC.createGain(); sfxBus.gain.value = 0.75; sfxBus.connect(master);
+      decodeSamples();
+      noiseBuf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
+      const ch = noiseBuf.getChannelData(0); for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+    } catch (e) { AC = null; }
+  } else if (AC.state === 'suspended') AC.resume();
+  return !!AC;
+}
+const now = () => AC.currentTime;
+function osc(o) {
+  const t = o.t, g = AC.createGain(), x = AC.createOscillator(), a = o.a || 0.008;
+  x.type = o.type || 'sine'; x.frequency.setValueAtTime(o.f, t); if (o.det) x.detune.value = o.det;
+  if (o.to) x.frequency.exponentialRampToValueAtTime(o.to, t + o.d);
+  if (o.vib) { const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = o.vib.f; lg.gain.value = o.vib.depth; l.connect(lg).connect(x.frequency); l.start(t); l.stop(t + o.d + 0.1); }
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.v, t + a);
+  if (o.hold) { g.gain.setValueAtTime(o.v, t + Math.max(a + 0.001, o.d - 0.05)); g.gain.exponentialRampToValueAtTime(0.0001, t + o.d + 0.03); }
+  else g.gain.exponentialRampToValueAtTime(0.0001, t + o.d);
+  let node = x;
+  if (o.lp) { const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.lp; x.connect(f); node = f; }
+  node.connect(g); g.connect(o.out || sfxBus); x.start(t); x.stop(t + o.d + 0.12);
+}
+function noise(o) {
+  const s = AC.createBufferSource(), fl = AC.createBiquadFilter(), g = AC.createGain(), a = o.a || 0.005;
+  s.buffer = noiseBuf; s.loop = o.d > 0.4;
+  fl.type = o.ft || 'bandpass'; fl.frequency.value = o.f || 1000; fl.Q.value = o.q || 1;
+  g.gain.setValueAtTime(0.0001, o.t); g.gain.exponentialRampToValueAtTime(o.v, o.t + a); g.gain.exponentialRampToValueAtTime(0.0001, o.t + o.d);
+  s.connect(fl).connect(g).connect(o.out || sfxBus); s.start(o.t, Math.random() * 1.5); s.stop(o.t + o.d + 0.05);
+}
+/* animal voices: synthesised fallbacks, used until (or unless) a recording loads */
+const SYNTH = {
+  pig(t, k = 1) { for (const o of [0, .17]) { osc({ f: 230, to: 110, t: t + o, d: .12 * k + .05, v: .2, type: 'sawtooth', lp: 900, a: .01 }); noise({ t: t + o, d: .1, v: .1, f: 600, q: 2 }); } },
+  cow(t, k = 1) { const d = .9 * k; osc({ f: 196, to: 147, t, d, v: .17, type: 'sawtooth', lp: 650, a: .1, hold: 1, vib: { f: 5, depth: 4 } }); osc({ f: 98, to: 73, t, d, v: .09, type: 'square', lp: 350, a: .1, hold: 1 }); },
+  sheep(t, k = 1) { const d = .75 * k; osc({ f: 440, to: 392, t, d, v: .1, type: 'sawtooth', lp: 1500, a: .03, hold: 1, vib: { f: 10, depth: 28 } }); osc({ f: 220, to: 196, t, d, v: .05, type: 'square', lp: 800, a: .03, hold: 1, vib: { f: 10, depth: 14 } }); },
+  goat(t, k = 1) { const d = .55 * k; osc({ f: 560, to: 500, t, d, v: .1, type: 'sawtooth', lp: 2400, a: .02, hold: 1, vib: { f: 15, depth: 50 } }); osc({ f: 280, to: 250, t, d, v: .04, type: 'square', lp: 1200, a: .02, hold: 1, vib: { f: 15, depth: 25 } }); },
+  chicken(t, k = 1) { [0, .12, .24, .42].forEach((o, i) => { const last = i === 3; osc({ f: last ? 1000 : 850, to: last ? 500 : 600, t: t + o, d: last ? .2 : .07, v: .09, type: 'square', lp: 2200, a: .005 }); noise({ t: t + o, d: .05, v: .08, f: 1800, q: 3 }); }); },
+  frog(t, k = 1) { (k < 1 ? [0, .2] : [0, .2, .55, .75]).forEach(o => { osc({ f: 150, to: 120, t: t + o, d: .16, v: .22, type: 'square', lp: 700, a: .008, hold: 1, vib: { f: 42, depth: 30 } }); noise({ t: t + o, d: .12, v: .06, ft: 'lowpass', f: 500 }); }); },
+  duck(t, k = 1) { [0, .24].forEach(o => { osc({ f: 520, to: 380, t: t + o, d: .17, v: .1, type: 'square', lp: 1500, a: .01, hold: 1, vib: { f: 30, depth: 20 } }); noise({ t: t + o, d: .15, v: .05, ft: 'lowpass', f: 1200 }); }); },
+  horse(t, k = 1) { const d = .7 * k; osc({ f: 1150, to: 480, t, d, v: .09, type: 'sawtooth', lp: 3200, a: .02, hold: 1, vib: { f: 14, depth: 60 } }); osc({ f: 575, to: 240, t, d, v: .04, type: 'square', lp: 1600, a: .02, hold: 1, vib: { f: 14, depth: 30 } }); noise({ t: t + d, d: .15, v: .08, ft: 'lowpass', f: 500 }); },
+};
+const SAMPLE_FILES = { pig: 'sounds/pig-oink.mp3', cow: 'sounds/cow-moo.mp3', sheep: 'sounds/sheep-baa.mp3', chicken: 'sounds/chicken-cluck.mp3' };
+const SAMPLE_VOL = { pig: 1.1, cow: 0.9, sheep: 0.9, chicken: 0.8 };
+const sampleData = {}, samples = {};
+// Fetch the files right away; decoding waits for the AudioContext, which needs a tap first.
+for (const [id, url] of Object.entries(SAMPLE_FILES)) sampleData[id] = fetch(url).then(r => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
+function decodeSamples() {
+  for (const id of Object.keys(SAMPLE_FILES)) {
+    if (samples[id] !== undefined) continue; samples[id] = null;
+    sampleData[id].then(buf => buf && new Promise((ok, no) => AC.decodeAudioData(buf.slice(0), ok, no))).then(b => { if (b) samples[id] = b; }).catch(() => {});
+  }
+}
+// k < 1 is a short call (in songs): play the start and fade it out early.
+function playSample(id, t, k = 1) {
+  const b = samples[id], src = AC.createBufferSource(), g = AC.createGain(), d = Math.min(b.duration, b.duration * Math.max(0.45, k) + 0.05), v = SAMPLE_VOL[id] || 1;
+  src.buffer = b; src.playbackRate.value = rnd(0.96, 1.05);
+  g.gain.setValueAtTime(v, t); g.gain.setValueAtTime(v, t + Math.max(0, d - 0.08)); g.gain.linearRampToValueAtTime(0.0001, t + d);
+  src.connect(g).connect(sfxBus); src.start(t); src.stop(t + d + 0.02);
+}
+const CALLS = Object.fromEntries(Object.keys(SYNTH).map(id => [id, (t, k) => (samples[id] ? playSample(id, t, k) : SYNTH[id](t, k))]));
+const SFX = {
+  rooster(t) { let tt = t; for (const [f, d] of [[659, .14], [784, .14], [880, .24], [784, .8]]) { osc({ f, to: d > .5 ? f * .72 : f * 1.02, t: tt, d, v: .12, type: 'sawtooth', lp: 2800, a: .02, hold: 1, vib: d > .5 ? { f: 9, depth: 25 } : null }); tt += d; } },
+  bell(t) { osc({ f: 880, t, d: .35, v: .12, type: 'square', lp: 3000, a: .002 }); osc({ f: 1319, t, d: .25, v: .05, type: 'square', a: .002 }); noise({ t, d: .03, v: .1, f: 4000 }); },
+  go(t) { [523, 659, 784, 1047].forEach((f, i) => osc({ f, t: t + i * .08, d: i === 3 ? .6 : .14, v: .1, type: 'sawtooth', lp: 2500, a: .01, hold: 1 })); },
+  splat(t) { noise({ t, d: .18, v: .25, ft: 'lowpass', f: 600 }); osc({ f: 180, to: 60, t, d: .2, v: .15 }); },
+  splash(t) { noise({ t, d: .3, v: .2, f: 2500, q: .6 }); noise({ t: t + .05, d: .25, v: .12, f: 1200, q: .8 }); },
+  munch(t) { for (let k = 0; k < 3; k++) noise({ t: t + k * .14, d: .06, v: .14, f: 900, q: 3 }); },
+  thud(t) { noise({ t, d: .12, v: .2, ft: 'lowpass', f: 300 }); osc({ f: 120, to: 50, t, d: .15, v: .2 }); },
+  boing(t) { osc({ f: 300, to: 900, t, d: .25, v: .12, type: 'triangle' }); },
+  whoosh(t) { noise({ t, d: .35, v: .15, f: 1500, q: .5 }); },
+  crunch(t) { noise({ t, d: .08, v: .2, f: 2200 }); noise({ t: t + .1, d: .06, v: .12, f: 1600, q: 2 }); },
+  flutter(t) { for (let k = 0; k < 6; k++) noise({ t: t + k * .07, d: .04, v: .05, f: 3000, q: 2 }); },
+  cheer(t) { noise({ t, d: 2.6, v: .12, f: 900, q: .4, a: .3 }); noise({ t: t + .2, d: 2.2, v: .08, f: 2200, q: .6, a: .4 }); },
+  pop(t) { noise({ t, d: .08, v: .2, ft: 'highpass', f: 2000 }); osc({ f: 600, to: 200, t, d: .1, v: .1 }); },
+  win(t) { [[523, 0, .18], [659, .18, .18], [784, .36, .18], [1047, .54, .7]].forEach(([f, o, d]) => { osc({ f, t: t + o, d, v: .09, type: 'sawtooth', lp: 2600, a: .02, hold: 1 }); osc({ f: f / 2, t: t + o, d, v: .04, type: 'square', lp: 1200, a: .02, hold: 1 }); }); },
+};
+const play = (name, extra) => { if (!AC) return; const t = now() + 0.02; if (CALLS[name]) CALLS[name](t, extra); else if (SFX[name]) SFX[name](t); };
+
+/* songs, written as note:beats. X marks a spot where the winning animal sings. */
+const SEMI = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
+const hz = n => { const m = /^([A-G]#?)(\d)$/.exec(n); return 440 * Math.pow(2, (SEMI[m[1]] + (+m[2] + 1) * 12 - 69) / 12); };
+function mel(str, kind) {
+  const ev = []; let b = 0;
+  for (const tok of str.trim().split(/\s+/)) { const [n, d] = tok.split(':'); if (n === 'X') ev.push({ b, d: +d, k: 'call' }); else if (n !== 'R') ev.push({ b, d: +d, f: hz(n), k: kind }); b += +d; }
+  return { ev, len: b };
+}
+const SONGS = (() => {
+  const CH = { G: ['G2', 'D3', ['G3', 'B3', 'D4']], C: ['C3', 'G3', ['C4', 'E4', 'G4']], D: ['D3', 'A3', ['D4', 'F#4', 'A4']], F: ['F2', 'C3', ['F3', 'A3', 'C4']] };
+  function accompany(song, bars, st) {
+    bars.forEach((bar, i) => {
+      const b0 = i * 4, parts = bar.split('|');
+      parts.forEach((c, j) => {
+        const b = b0 + j * (4 / parts.length), ch = CH[c];
+        song.ev.push({ b, d: 1, f: hz(ch[0]), k: st.bass }); if (parts.length === 1) song.ev.push({ b: b + 2, d: 1, f: hz(ch[1]), k: st.bass });
+        (parts.length === 1 ? [1, 3] : [1]).forEach(o => ch[2].forEach((nn, k) => song.ev.push({ b: b + o + (st.strum ? k * 0.04 : 0), d: .3, f: hz(nn), k: st.chord })));
+      });
+      if (st.perc) for (let s = 0; s < 8; s++) song.ev.push({ b: b0 + s * .5, d: .05, k: st.perc, v: s % 2 ? 1 : .45 });
+    });
+    song.ev.sort((a, b) => a.b - b.b); return song;
+  }
+  // Old MacDonald Had a Farm
+  const OM = ['G4:1 G4:1 G4:1 D4:1 E4:1 E4:1 D4:2 B4:1 B4:1 A4:1 A4:1 G4:3 D4:1',
+    'G4:1 G4:1 G4:1 D4:1 E4:1 E4:1 D4:2 B4:1 B4:1 A4:1 A4:1 G4:3 D4:.5 D4:.5',
+    'X:1 X:1 G4:1 D4:.5 D4:.5 X:1 X:1 G4:1.5 R:.5',
+    'G4:.5 G4:.5 G4:1 G4:.5 G4:.5 G4:1 G4:.5 G4:.5 G4:.5 G4:.5 X:1 X:1',
+    'G4:1 G4:1 G4:1 D4:1 E4:1 E4:1 D4:2 B4:1 B4:1 A4:1 A4:1 G4:4'].join(' ');
+  const omBars = 'G C G|D G G C G|D G G G G G G C G|D G'.split(' ');
+  const hoedown = accompany(mel(OM.replace(/X:/g, 'G4:'), 'fiddle'), omBars, { bass: 'bass', chord: 'banjo', perc: 'wash', strum: true });
+  const macdonald = accompany(mel(OM, 'toy'), omBars, { bass: 'pbass', chord: 'pluck' });
+  // Mary Had a Little Lamb
+  const mary = accompany(mel('E5:1 D5:1 C5:1 D5:1 E5:1 E5:1 E5:2 D5:1 D5:1 D5:2 E5:1 G5:1 G5:2 E5:1 D5:1 C5:1 D5:1 E5:1 E5:1 E5:1 E5:1 D5:1 D5:1 E5:1 D5:1 C5:4', 'box'), 'C C G C C C G C'.split(' '), { bass: 'pbass', chord: 'pluck' });
+  // Baa Baa Black Sheep
+  const half = 'C5:1 C5:1 G5:1 G5:1 A5:.5 A5:.5 A5:.5 A5:.5 G5:2 F5:1 F5:1 E5:1 E5:1 D5:.5 D5:.5 D5:.5 D5:.5 C5:2';
+  const mid = 'G5:1 G5:.5 G5:.5 F5:1 F5:1 E5:1 E5:.5 E5:.5 D5:2';
+  const baa = accompany(mel([half, mid, mid, half].join(' '), 'box'), 'C F|C F|C G|C C|F C|G C|F C|G C F|C F|C G|C'.split(' '), { bass: 'pbass', chord: 'pluck' });
+  return { hoedown, macdonald, mary, baa };
+})();
+function playEv(e, t, d, out) {
+  switch (e.k) {
+    case 'fiddle': { const dd = Math.max(.1, d * .92); osc({ f: e.f, t, d: dd, v: .06, type: 'sawtooth', lp: 2600, a: .03, hold: 1, det: -5, vib: { f: 6, depth: 5 }, out }); osc({ f: e.f, t, d: dd, v: .045, type: 'sawtooth', lp: 2600, a: .03, hold: 1, det: 6, out }); break; }
+    case 'banjo': osc({ f: e.f, t, d: .22, v: .05, type: 'triangle', lp: 3000, a: .003, out }); osc({ f: e.f * 2, t, d: .1, v: .02, type: 'square', lp: 4000, a: .003, out }); break;
+    case 'bass': osc({ f: e.f, t, d: Math.max(.08, d * .9), v: .2, type: 'triangle', hold: 1, out }); break;
+    case 'wash': noise({ t, d: .04, v: .06 * (e.v || 1), ft: 'highpass', f: 5000, out }); break;
+    case 'toy': osc({ f: e.f * 2, t, d: Math.max(.3, d * .9), v: .11, a: .004, out }); osc({ f: e.f * 6, t, d: .25, v: .02, a: .004, out }); osc({ f: e.f * 4, t, d: .4, v: .03, type: 'triangle', a: .004, out }); break;
+    case 'box': osc({ f: e.f, t, d: 1.1, v: .09, a: .004, out }); osc({ f: e.f * 2.76, t, d: .3, v: .02, a: .004, out }); osc({ f: e.f * 5.4, t, d: .1, v: .006, a: .004, out }); break;
+    case 'pluck': osc({ f: e.f, t, d: .3, v: .035, type: 'triangle', lp: 1800, a: .004, out }); break;
+    case 'pbass': osc({ f: e.f, t, d: .5, v: .12, type: 'triangle', lp: 700, a: .02, out }); break;
+  }
+}
+/* a small look-ahead sequencer whose tempo can change while it plays */
+function Seq(song, bpm, loop, callFn, onEnd) {
+  const out = AC.createGain(); out.connect(musicBus);
+  const tempo = () => (typeof bpm === 'function' ? bpm() : bpm);
+  let i = 0, anchorB = 0, anchorT = AC.currentTime + 0.08, spb = 60 / tempo(), stopped = false, timer = 0;
+  const stop = (fade = 0.1) => {
+    if (stopped) return; stopped = true; clearInterval(timer);
+    const t = AC.currentTime; out.gain.setValueAtTime(out.gain.value, t); out.gain.linearRampToValueAtTime(0, t + fade);
+    setTimeout(() => out.disconnect(), (fade + 1.5) * 1000);
+  };
+  const tick = () => {
+    if (stopped) return;
+    const t0 = AC.currentTime, nt = 60 / tempo();
+    if (Math.abs(nt - spb) > 1e-4) { anchorB += (t0 - anchorT) / spb; anchorT = t0; spb = nt; }
+    for (;;) {
+      if (i >= song.ev.length) { if (!loop) { clearInterval(timer); setTimeout(() => { stop(); onEnd && onEnd(); }, 1800); return; } i = 0; anchorB -= song.len; }
+      const e = song.ev[i], t = anchorT + (e.b - anchorB) * spb;
+      if (t > t0 + 0.25) break;
+      if (t >= t0 - 0.05) { if (e.k === 'call') { callFn && callFn(t); } else playEv(e, t, e.d * spb, out); }
+      i++;
+    }
+  };
+  timer = setInterval(tick, 60); tick();
+  return { stop, get stopped() { return stopped; } };
+}
+let seq = null, idlePick = 0;
+function music(name, bpm, loop, callFn, onEnd) { if (!audio()) return; if (seq) seq.stop(); seq = Seq(SONGS[name], bpm, loop, callFn, onEnd); }
+function stopMusic(fade) { if (seq) seq.stop(fade); seq = null; }
+function idleMusic() { if (!AC || mode !== 'ready') return; music(['mary', 'baa'][idlePick++ % 2], 96, true); }
+
+/* ---------- Three.js scene ---------- */
+const THREE_OK = true;
+const glHost = $('gl'), trackWrap = $('trackWrap');
+const LANE_W = 2.3, L = 64, START_X = -30, FIN_X = START_X + L, RACE_T = 13, STEP = 0.8, INTRO_STEP = 1.05, ROOSTER_T = 1.6;
+let renderer, scene, camera, sun, W = 0, H = 0, HW = 8, n = 0;
+const laneZ = i => (i - (n - 1) / 2) * LANE_W;
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const mats = new Map();
+const mat = (color, opts = {}) => { const k = color + JSON.stringify(opts); if (!mats.has(k)) mats.set(k, new THREE.MeshLambertMaterial({ color, ...opts })); return mats.get(k); };
+function mesh(geo, color, opts) { const m = new THREE.Mesh(geo, mat(color, opts)); m.castShadow = true; m.receiveShadow = true; return m; }
+const box = (w, h, d, c, o) => mesh(new THREE.BoxGeometry(w, h, d), c, o);
+const sph = (r, c, o, seg = 12) => mesh(new THREE.SphereGeometry(r, seg, Math.max(6, seg - 4)), c, o);
+const ell = (rx, ry, rz, c, o, seg = 14) => { const m = sph(1, c, o, seg); m.scale.set(rx, ry, rz); return m; };
+const cyl = (r1, r2, h, c, seg = 10, o) => mesh(new THREE.CylinderGeometry(r1, r2, h, seg), c, o);
+const cone = (r, h, c, seg = 8, o) => mesh(new THREE.ConeGeometry(r, h, seg), c, o);
+const grp = (x = 0, y = 0, z = 0, parent) => { const g = new THREE.Group(); g.position.set(x, y, z); if (parent) parent.add(g); return g; };
+const at = (m, x, y, z, parent) => { m.position.set(x, y, z); if (parent) parent.add(m); return m; };
+const noShadow = m => { m.castShadow = false; return m; };
+function canvasTex(w, h, draw) { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; draw(cv.getContext('2d'), w, h); const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; }
+function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function textSprite(text, bg, fg, px = 44, pad = 18, scale = 0.011) {
+  const cv = document.createElement('canvas'), c = cv.getContext('2d'), font = `900 ${px}px Nunito, system-ui, sans-serif`; c.font = font;
+  const w = Math.ceil(c.measureText(text).width) + pad * 2, h = Math.ceil(px + pad * 1.4); cv.width = w; cv.height = h;
+  c.font = font; c.fillStyle = bg; rr(c, 0, 0, w, h, h / 2); c.fill(); c.fillStyle = fg; c.textBaseline = 'middle'; c.textAlign = 'center'; c.fillText(text, w / 2, h / 2 + 2);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false })); sp.scale.set(w * scale, h * scale, 1); sp.userData.base = sp.scale.clone(); sp.userData.ownTex = true; return sp;
+}
+function spriteOf(tex, size, opts = {}) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, ...opts })); sp.scale.set(size, size, 1); return sp; }
+function disposeGroup(g) { g.traverse(o => { if (o.geometry && !o.userData.shared) o.geometry.dispose(); if (o.userData.ownTex && o.material) { o.material.map && o.material.map.dispose(); o.material.dispose(); } }); }
+
+const C = { PIG: 0xf7a8bf, PIG2: 0xe98aa6, COW: 0xf7f3ec, COWB: 0x2a2420, COWP: 0xf0b4b0, WOOL: 0xf4efe4, FACE: 0x3b3330, HEN: 0xfbf8f0, RED: 0xe03a2f, BEAK: 0xf5b32b, HORSE: 0x9c6b3c, HORSE2: 0x4d3118, GOAT: 0xc3c6c8, GOAT2: 0x7d7f82, DUCK: 0xf9d33a, BILL: 0xf08a24, FROG: 0x5cbf3a, FROG2: 0xd8ef9a, FROGD: 0x2f6e1f, HOOF: 0x3a2a1c, EYE: 0x1a1210, WHITE: 0xffffff, WOOD: 0x8a5a2b, FENCE: 0xfdf6ea, BARN: 0xd0403c, HAY: 0xe7c15a };
+
+let TEX = {};
+function buildTextures() {
+  const radial = (stops) => canvasTex(64, 64, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); stops.forEach(([o, col]) => g.addColorStop(o, col)); c.fillStyle = g; c.fillRect(0, 0, w, h); });
+  TEX.puff = radial([[0, 'rgba(255,255,255,.9)'], [0.5, 'rgba(255,255,255,.45)'], [1, 'rgba(255,255,255,0)']]);
+  TEX.sun = radial([[0, 'rgba(255,245,200,1)'], [0.35, 'rgba(255,220,90,.95)'], [0.5, 'rgba(255,200,60,.35)'], [1, 'rgba(255,200,60,0)']]);
+  TEX.cloud = canvasTex(256, 128, (c, w, h) => { c.fillStyle = 'rgba(255,255,255,.96)'; [[64, 80, 36], [110, 60, 46], [160, 72, 40], [200, 86, 30], [120, 90, 44]].forEach(([x, y, r]) => { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); }); });
+  TEX.heart = canvasTex(64, 64, (c) => { c.fillStyle = '#ff4d7a'; c.beginPath(); c.moveTo(32, 58); c.bezierCurveTo(4, 36, 6, 8, 32, 20); c.bezierCurveTo(58, 8, 60, 36, 32, 58); c.fill(); });
+  TEX.star = canvasTex(64, 64, (c) => { c.fillStyle = '#ffd23f'; c.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 11 : 28, a = i * Math.PI / 5 - Math.PI / 2; c.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); } c.closePath(); c.fill(); });
+  TEX.butterfly = canvasTex(64, 64, (c) => { c.fillStyle = '#ff8c42'; [[18, 24, 16, 13], [46, 24, 16, 13], [20, 44, 12, 10], [44, 44, 12, 10]].forEach(([x, y, rx, ry]) => { c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, TAU); c.fill(); }); c.fillStyle = '#7b2cbf'; [[18, 24], [46, 24]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 6, 0, TAU); c.fill(); }); c.fillStyle = '#2b2b2b'; c.fillRect(30, 12, 4, 40); });
+  TEX.apple = canvasTex(64, 64, (c) => { c.fillStyle = '#e23b2e'; c.beginPath(); c.arc(32, 36, 22, 0, TAU); c.fill(); c.fillStyle = '#5a3b1e'; c.fillRect(30, 8, 4, 12); c.fillStyle = '#4caf50'; c.beginPath(); c.ellipse(40, 14, 9, 5, -0.5, 0, TAU); c.fill(); });
+  TEX.moo = canvasTex(256, 128, (c, w, h) => { c.font = '900 72px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 14; c.strokeStyle = '#fff'; c.strokeText('MOO!', w / 2, h / 2); c.fillStyle = '#d7413f'; c.fillText('MOO!', w / 2, h / 2); });
+  TEX.checker = canvasTex(64, 64, (c) => { for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { c.fillStyle = (x + y) % 2 ? '#1d1d1d' : '#fff'; c.fillRect(x * 16, y * 16, 16, 16); } });
+  TEX.checker.wrapS = TEX.checker.wrapT = THREE.RepeatWrapping;
+  const sign = (txt, bg) => canvasTex(512, 96, (c, w, h) => { c.fillStyle = bg; c.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 24) { c.fillStyle = (x / 24) % 2 ? '#1d1d1d' : '#fff'; c.fillRect(x, 0, 24, 12); c.fillRect(x, h - 12, 24, 12); } c.font = '900 56px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff'; c.fillText(txt, w / 2, h / 2 + 2); });
+  TEX.finish = sign('FINISH', '#d7413f'); TEX.start = sign('START', '#3a7d44');
+  TEX.grass = canvasTex(256, 256, (c, w, h) => { c.fillStyle = '#5fb55a'; c.fillRect(0, 0, w, h); for (let i = 0; i < 1200; i++) { c.fillStyle = Math.random() < 0.5 ? '#54a94f' : '#6dc566'; c.fillRect(Math.random() * w, Math.random() * h, 3, 3); } });
+  TEX.grass.wrapS = TEX.grass.wrapT = THREE.RepeatWrapping; TEX.grass.repeat.set(90, 90);
+  TEX.dirt = canvasTex(256, 256, (c, w, h) => { c.fillStyle = '#c9a26d'; c.fillRect(0, 0, w, h); for (let i = 0; i < 700; i++) { c.fillStyle = Math.random() < 0.5 ? '#bf945e' : '#d4b07c'; c.fillRect(Math.random() * w, Math.random() * h, 4, 3); } });
+  TEX.dirt.wrapS = TEX.dirt.wrapT = THREE.RepeatWrapping; TEX.dirt.repeat.set(14, 3);
+}
+
+/* ---- the farm ---- */
+const world = { trackG: null, clouds: [], blades: null, chicks: [], farmer: null, ribbon: [], tape: -1 };
+function tree(x, z, k = 1) {
+  const g = grp(x, 0, z, scene); g.scale.setScalar(k);
+  at(cyl(0.32, 0.5, 2.6, C.WOOD, 8), 0, 1.3, 0, g);
+  [[0, 3.8, 0, 2.2], [1.2, 3.1, 0.6, 1.5], [-1.1, 3.3, -0.5, 1.6], [0.2, 3.0, -1.2, 1.3]].forEach(([px, py, pz, r]) => at(sph(r, 0x3f9a3b, {}, 12), px, py, pz, g));
+  for (let i = 0; i < 9; i++) { const a = rnd(0, TAU), b = rnd(-0.3, 0.9); at(noShadow(sph(0.17, 0xe23b2e, {}, 7)), Math.cos(a) * 2.1 * Math.cos(b), 3.8 + Math.sin(b) * 2.0, Math.sin(a) * 2.1 * Math.cos(b), g); }
+}
+function hayBale(x, y, z, parent, rot = 0) { const b = cyl(0.8, 0.8, 1.5, C.HAY, 14); b.rotation.z = Math.PI / 2; b.rotation.y = rot; at(b, x, y, z, parent || scene); const band = cyl(0.82, 0.82, 0.18, 0xc69a3a, 14); band.rotation.z = Math.PI / 2; band.rotation.y = rot; at(band, x, y, z, parent || scene); return b; }
+function sunflower(x, z, parent) {
+  const g = grp(x, 0, z, parent); const h = rnd(1.3, 1.8);
+  at(cyl(0.04, 0.05, h, 0x4f8f2f, 6), 0, h / 2, 0, g);
+  const petals = cyl(0.4, 0.4, 0.05, 0xf7c531, 12); petals.rotation.x = Math.PI / 2; at(petals, 0, h, -0.03, g);
+  const disc = cyl(0.24, 0.24, 0.07, 0x6b4a1e, 12); disc.rotation.x = Math.PI / 2; at(disc, 0, h, 0.02, g);
+  for (const s of [-1, 1]) { const leaf = ell(0.25, 0.08, 0.14, 0x4f8f2f); leaf.rotation.z = s * 0.5; at(leaf, s * 0.22, h * 0.5, 0, g); }
+  return g;
+}
+function buildBarn(x, z) {
+  const g = grp(x, 0, z, scene);
+  at(box(14, 7, 11, C.BARN), 0, 3.5, 0, g);
+  at(box(13.6, 2.2, 7.4, C.BARN), 0, 8.1, 0, g); at(box(13.6, 2.0, 4.2, C.BARN), 0, 10.1, 0, g);
+  for (const s of [-1, 1]) {
+    const lo = at(box(15.4, 0.35, 4.4, 0x7d3127), 0, 8.2, s * 4.3, g); lo.rotation.x = s * 1.0;
+    const hi = at(box(15.4, 0.35, 3.4, 0x7d3127), 0, 10.4, s * 1.6, g); hi.rotation.x = s * 0.42;
+  }
+  at(box(15.6, 0.4, 0.7, 0x5e2119), 0, 11.0, 0, g);
+  const door = at(box(5, 5.2, 0.25, 0xb9332f), 0, 2.6, 5.55, g);
+  for (const s of [-1, 1]) { const bar = at(box(0.3, 6.6, 0.1, C.FENCE), 0, 2.6, 5.72, g); bar.rotation.z = s * 0.72; }
+  at(box(5.2, 0.3, 0.1, C.FENCE), 0, 5.15, 5.72, g); for (const s of [-1, 1]) at(box(0.3, 5.3, 0.1, C.FENCE), s * 2.5, 2.6, 5.72, g);
+  at(box(1.8, 1.8, 0.2, C.FENCE), 0, 7.3, 5.4, g); at(box(1.2, 1.2, 0.1, 0x3b2a16), 0, 7.3, 5.52, g);
+  at(box(14.2, 0.3, 11.2, C.FENCE), 0, 0.15, 0, g);
+  at(cyl(0.05, 0.05, 1.4, 0x333, 6), 2, 11.7, 0, g); const vane = at(box(1.1, 0.08, 0.08, 0x333), 2, 12.3, 0, g); at(cone(0.12, 0.4, 0x333, 4), 2.5, 12.3, 0, g).rotation.z = -Math.PI / 2;
+  at(sph(0.16, C.RED, {}, 8), 2, 12.55, 0, g);
+}
+function buildSilo(x, z) { const g = grp(x, 0, z, scene); at(cyl(2.4, 2.4, 12, 0xd9dde0, 18), 0, 6, 0, g); for (const y of [3, 6, 9]) at(cyl(2.45, 2.45, 0.2, 0xb8bec3, 18), 0, y, 0, g); at(sph(2.4, 0xb23a36, {}, 16), 0, 12, 0, g); }
+function buildWindmill(x, z) {
+  const g = grp(x, 0, z, scene); at(cyl(0.6, 1.7, 15, 0x9aa3a8, 6), 0, 7.5, 0, g); at(box(1.6, 1.4, 1.6, 0x6f7a80), 0, 15.3, 0, g);
+  const blades = world.blades = grp(0, 15.3, 1.1, g);
+  for (let i = 0; i < 4; i++) { const b = at(noShadow(box(0.5, 5.2, 0.08, 0xeef1f3)), 0, 2.6, 0, grp(0, 0, 0, blades)); b.parent.rotation.z = i * Math.PI / 2; }
+  at(sph(0.35, 0x444, {}, 8), 0, 15.3, 1.2, g); at(box(2.5, 0.9, 0.08, 0xeef1f3), -1.8, 15.3, 0, g);
+}
+function buildTractor(x, z) {
+  const g = grp(x, 0, z, scene); g.rotation.y = -0.4;
+  at(box(3.4, 1.3, 1.8, C.BARN), 0, 1.6, 0, g); at(box(1.9, 1.1, 1.5, C.BARN), 1.6, 1.5, 0, g); at(box(1.0, 0.9, 1.3, 0xb9332f), -1.0, 2.6, 0, g);
+  at(cyl(0.08, 0.08, 1.5, 0x333, 6), 2.0, 2.8, 0.5, g); const wheel = mesh(new THREE.TorusGeometry(0.38, 0.06, 6, 12), 0x333); wheel.rotation.y = Math.PI / 2; at(wheel, -0.2, 2.6, 0, g);
+  for (const s of [-1, 1]) { const w = cyl(1.3, 1.3, 0.6, 0x2b2b2b, 16); w.rotation.x = Math.PI / 2; at(w, -0.9, 1.3, s * 1.2, g); const hub = cyl(0.55, 0.55, 0.66, 0xf2c23a, 10); hub.rotation.x = Math.PI / 2; at(hub, -0.9, 1.3, s * 1.2, g); const f = cyl(0.7, 0.7, 0.4, 0x2b2b2b, 14); f.rotation.x = Math.PI / 2; at(f, 1.9, 0.7, s * 1.0, g); }
+}
+function buildPond(x, z) {
+  const g = grp(x, 0, z, scene); const w = new THREE.Mesh(new THREE.CircleGeometry(5.5, 28), new THREE.MeshLambertMaterial({ color: 0x56b2e8 })); w.rotation.x = -Math.PI / 2; w.scale.set(1, 0.65, 1); w.position.y = 0.03; w.receiveShadow = true; g.add(w);
+  for (let i = 0; i < 9; i++) { const a = rnd(0, TAU), r = rnd(4.6, 5.8); at(cyl(0.04, 0.05, rnd(1.1, 1.6), 0x4f7f2f, 5), Math.cos(a) * r, 0.7, Math.sin(a) * r * 0.65, g); at(cyl(0.11, 0.11, 0.4, 0x5a3b1e, 6), Math.cos(a) * r, 1.45, Math.sin(a) * r * 0.65, g); }
+  for (let i = 0; i < 4; i++) { const p = new THREE.Mesh(new THREE.CircleGeometry(0.5, 10), mat(0x3f9a3b)); p.rotation.x = -Math.PI / 2; at(p, rnd(-3, 3), 0.05, rnd(-1.5, 1.5), g); }
+}
+function buildScarecrow(x, z) {
+  const g = grp(x, 0, z, scene); at(cyl(0.08, 0.08, 2.8, C.WOOD, 6), 0, 1.4, 0, g); at(box(2.2, 0.1, 0.1, C.WOOD), 0, 2.1, 0, g);
+  at(box(0.9, 1.1, 0.5, 0x3b6fb6), 0, 1.9, 0, g); at(box(1.9, 0.3, 0.3, 0x3b6fb6), 0, 2.1, 0, g); at(sph(0.32, 0xe8c99a, {}, 10), 0, 2.85, 0, g);
+  at(cyl(0.6, 0.6, 0.06, 0xd9b55a, 10), 0, 3.08, 0, g); at(cone(0.42, 0.5, 0xd9b55a, 10), 0, 3.3, 0, g);
+  for (const s of [-1, 1]) at(cone(0.12, 0.35, C.HAY, 6), s * 1.05, 2.1, 0, g).rotation.z = s * Math.PI / 2;
+  at(sph(0.14, 0x222, {}, 7), 0.8, 2.3, 0, g);
+}
+function buildFarmer(x, z, parent) {
+  const g = grp(x, 0, z, parent);
+  for (const s of [-1, 1]) at(cyl(0.14, 0.14, 0.9, 0x3f5fa6, 7), s * 0.18, 0.45, 0, g);
+  at(box(0.74, 0.36, 0.44, C.BARN), 0, 1.62, 0, g); at(box(0.7, 0.75, 0.42, 0x3f5fa6), 0, 1.2, 0, g); for (const s of [-1, 1]) at(box(0.12, 0.5, 0.46, 0x3f5fa6), s * 0.2, 1.68, 0, g);
+  at(sph(0.3, 0xe8c29a, {}, 10), 0, 2.15, 0, g); for (const s of [-1, 1]) at(noShadow(sph(0.04, C.EYE, {}, 5)), s * 0.1, 2.2, 0.27, g);
+  at(cyl(0.56, 0.56, 0.06, 0xe4bd5c, 12), 0, 2.4, 0, g); at(cyl(0.3, 0.34, 0.32, 0xe4bd5c, 12), 0, 2.58, 0, g);
+  const arms = [-1, 1].map(s => { const piv = grp(s * 0.44, 1.78, 0, g); at(cyl(0.08, 0.08, 0.7, C.BARN, 7), 0, -0.35, 0, piv); at(sph(0.1, 0xe8c29a, {}, 6), 0, -0.72, 0, piv); return piv; });
+  at(cyl(0.03, 0.03, 1.5, C.WOOD, 5), 0, -0.3, 0, arms[1]); const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.55), new THREE.MeshLambertMaterial({ map: TEX.checker, side: THREE.DoubleSide })); at(flag, 0.45, 0.2, 0, arms[1]);
+  world.farmer = { g, arms };
+}
+function buildChick(x, z, parent) { const g = grp(x, 0, z, parent); at(sph(0.17, 0xf7d548, {}, 8), 0, 0.17, 0, g); at(sph(0.12, 0xf7d548, {}, 8), 0.1, 0.38, 0, g); at(cone(0.04, 0.1, C.BILL, 5), 0.22, 0.37, 0, g).rotation.z = -Math.PI / 2; at(noShadow(sph(0.025, C.EYE, {}, 4)), 0.17, 0.42, 0.08, g); g.rotation.y = rnd(-0.6, 0.6); world.chicks.push({ g, ph: rnd(0, TAU) }); }
+
+function buildWorld() {
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), new THREE.MeshLambertMaterial({ map: TEX.grass })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+  [[-150, -110, 70, 18], [-60, -135, 90, 24], [40, -125, 80, 20], [150, -110, 70, 16], [-150, 110, 60, 14], [120, 130, 80, 18]].forEach(([x, z, r, h]) => { const m = ell(r, h, r * 0.6, 0x4e9c49); m.position.set(x, -1, z); m.castShadow = false; scene.add(m); });
+  buildBarn(-16, -18); buildSilo(-28, -19); buildWindmill(28, -34); buildTractor(6, -14.5); buildPond(32, -20); buildScarecrow(-3, -13.5);
+  [[-42, -16, 1.1], [-8, -24, 1.2], [40, -13, 1], [52, -20, 1.3], [-48, 16, 1.1], [56, 18, 1.2], [20, -28, 1], [-30, 30, 1.4], [10, 34, 1.3]].forEach(([x, z, k]) => tree(x, z, k));
+  hayBale(14, 0.8, -13.5); hayBale(15.8, 0.8, -13.5, null, 0.1); hayBale(14.9, 2.3, -13.5); hayBale(-40, 0.8, 13, null, 0.7);
+  for (let i = 0; i < 9; i++) { const sp = spriteOf(TEX.cloud, 1, { fog: false, opacity: 0.95 }); sp.scale.set(rnd(16, 26), rnd(8, 12), 1); sp.position.set(rnd(-140, 140), rnd(26, 44), rnd(-70, -130)); scene.add(sp); world.clouds.push(sp); }
+  const sunSp = spriteOf(TEX.sun, 34, { fog: false, depthWrite: false }); sunSp.position.set(-80, 62, -150); scene.add(sunSp);
+}
+function setupTrack(count) {
+  if (world.trackG) { disposeGroup(world.trackG); scene.remove(world.trackG); world.chicks = []; world.ribbon = []; }
+  n = count; HW = n * LANE_W / 2 + 0.8;
+  const g = world.trackG = grp(0, 0, 0, scene), cx = START_X + L / 2 + 1;
+  const dirt = new THREE.Mesh(new THREE.PlaneGeometry(L + 16, HW * 2), new THREE.MeshLambertMaterial({ map: TEX.dirt })); dirt.rotation.x = -Math.PI / 2; dirt.position.set(cx, 0.015, 0); dirt.receiveShadow = true; g.add(dirt);
+  for (let i = 1; i < n; i++) at(noShadow(box(L + 16, 0.02, 0.07, C.FENCE)), cx, 0.03, laneZ(i) - LANE_W / 2, g);
+  at(noShadow(box(0.3, 0.02, HW * 2, C.WHITE)), START_X, 0.035, 0, g);
+  const fin = new THREE.Mesh(new THREE.PlaneGeometry(1.2, HW * 2), new THREE.MeshLambertMaterial({ map: TEX.checker })); fin.material.map = TEX.checker.clone(); fin.material.map.needsUpdate = true; fin.material.map.repeat.set(1, HW); fin.rotation.x = -Math.PI / 2; fin.position.set(FIN_X, 0.04, 0); g.add(fin);
+  for (const s of [-1, 1]) {
+    const z = s * (HW + 0.6);
+    for (let x = START_X - 8; x <= FIN_X + 9; x += 4) at(box(0.18, 1.2, 0.18, C.FENCE), x, 0.6, z, g);
+    [0.5, 0.95].forEach(y => at(box(L + 18, 0.1, 0.07, C.FENCE), cx, y, z, g));
+    at(box(0.32, 5.4, 0.32, C.FENCE), FIN_X, 2.7, z, g); at(box(0.28, 4.4, 0.28, C.FENCE), START_X, 2.2, z, g);
+    const piv = grp(FIN_X, 0.95, z, g); at(noShadow(box(0.05, 0.14, HW + 0.6, 0xff5c7a)), 0, 0, -s * (HW + 0.6) / 2, piv); world.ribbon.push(piv);
+  }
+  const banner = (tex, x, y) => { for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(HW * 2 + 1.2, 1.0), new THREE.MeshLambertMaterial({ map: tex })); p.rotation.y = s * Math.PI / 2; p.position.set(x + s * 0.02, y, 0); g.add(p); } };
+  banner(TEX.finish, FIN_X, 4.9); banner(TEX.start, START_X, 3.9);
+  for (let x = START_X - 6; x < FIN_X + 8; x += 2.4) sunflower(x + rnd(-0.5, 0.5), HW + 1.5 + rnd(0, 1.2), g);
+  for (let x = START_X - 4; x < FIN_X + 4; x += 2.8) if (Math.random() < 0.7) sunflower(x + rnd(-0.5, 0.5), -(HW + 1.5 + rnd(0, 1.0)), g);
+  for (let x = START_X - 4; x < FIN_X + 6; x += rnd(3, 5)) buildChick(x, -(HW + 1.0), g);
+  for (const x of [START_X - 7, START_X - 5, FIN_X + 5, FIN_X + 7.5]) buildChick(x, HW + 1.0, g);
+  hayBale(FIN_X + 6, 0.8, -(HW + 2.5), g, 0.4); hayBale(START_X - 6, 0.8, -(HW + 2.2), g, -0.3);
+  buildFarmer(FIN_X + 1.2, -(HW + 1.7), g);
+}
+
+/* ---- the animals: each is a little toy built from boxes and spheres, facing +x ---- */
+function eyes(head, x, y, z, r = 0.055) { for (const s of [-1, 1]) { at(noShadow(sph(r, C.WHITE, {}, 7)), x, y, s * z, head); at(noShadow(sph(r * 0.55, C.EYE, {}, 5)), x + r * 0.55, y + r * 0.1, s * (z + r * 0.2), head); } }
+function addLegs(body, spots, o) {
+  const legs = [];
+  spots.forEach(([hx, hz], i) => {
+    const hip = grp(hx, o.hipY, hz, body); at(cyl(o.r, o.r * 0.85, o.upper, o.color, 7), 0, -o.upper / 2, 0, hip);
+    const knee = grp(0, -o.upper, 0, hip); at(cyl(o.r * 0.8, o.r * 0.7, o.lower, o.color2 || o.color, 7), 0, -o.lower / 2, 0, knee);
+    if (o.foot) at(box(o.foot[0], 0.04, o.foot[1], o.hoof), o.foot[0] * 0.25, -o.lower, 0, knee); else at(cyl(o.r * 0.85, o.r, o.r * 1.1, o.hoof, 7), 0, -o.lower, 0, knee);
+    legs.push({ hip, knee, front: hx > 0, off: spots.length === 2 ? i * Math.PI : (hx > 0 ? (hz > 0 ? 1.6 : 2.05) : (hz > 0 ? 0 : 0.45)) });
+  });
+  return legs;
+}
+const BUILD = {
+  pig(b) {
+    at(ell(0.85, 0.56, 0.58, C.PIG), 0, 0.8, 0, b);
+    const h = grp(0.95, 0.95, 0, b); at(sph(0.4, C.PIG, {}, 14), 0, 0, 0, h);
+    const sn = cyl(0.19, 0.21, 0.14, C.PIG2, 12); sn.rotation.z = Math.PI / 2; at(sn, 0.4, -0.06, 0, h);
+    for (const s of [-1, 1]) { at(noShadow(sph(0.035, 0xb85c7a, {}, 5)), 0.47, -0.04, s * 0.07, h); const ear = cone(0.13, 0.32, C.PIG2, 4); ear.rotation.x = s * 0.7; ear.rotation.z = 0.35; at(ear, 0.02, 0.33, s * 0.26, h); }
+    eyes(h, 0.24, 0.12, 0.2, 0.05);
+    const tail = mesh(new THREE.TorusGeometry(0.09, 0.025, 6, 10), C.PIG); tail.rotation.y = Math.PI / 2; at(tail, -0.86, 1.02, 0, b);
+    return { headG: h, legs: addLegs(b, [[0.45, 0.28], [0.45, -0.28], [-0.5, 0.28], [-0.5, -0.28]], { hipY: 0.55, upper: 0.26, lower: 0.24, r: 0.1, color: C.PIG, hoof: C.HOOF }), tail, wings: [] };
+  },
+  cow(b) {
+    at(ell(1.12, 0.64, 0.62, C.COW), 0, 1.14, 0, b);
+    [[0.3, 1.36, 0.56, 0.3, 0.22], [-0.5, 1.1, -0.58, 0.34, 0.26], [-0.25, 1.5, 0.3, 0.26, 0.2], [0.5, 1.0, -0.5, 0.24, 0.18]].forEach(([x, y, z, rx, ry]) => at(noShadow(ell(rx, ry, 0.12, C.COWB)), x, y, z, b));
+    at(ell(0.26, 0.2, 0.24, C.COWP), -0.35, 0.62, 0, b);
+    const neck = cyl(0.24, 0.32, 0.7, C.COW, 9); neck.rotation.z = -0.5; at(neck, 1.0, 1.42, 0, b);
+    const collar = mesh(new THREE.TorusGeometry(0.3, 0.05, 6, 12), C.RED); collar.rotation.y = Math.PI / 2; collar.rotation.x = 0.5; at(collar, 1.08, 1.5, 0, b); at(sph(0.1, 0xf2c23a, {}, 8), 1.2, 1.34, 0, b);
+    const h = grp(1.32, 1.62, 0, b); at(ell(0.38, 0.33, 0.3, C.COW), 0, 0, 0, h); at(ell(0.28, 0.2, 0.27, C.COWP), 0.3, -0.12, 0, h);
+    for (const s of [-1, 1]) { at(noShadow(sph(0.04, 0xb77a7a, {}, 5)), 0.52, -0.1, s * 0.1, h); const horn = cone(0.06, 0.26, 0xe9dcc2, 6); horn.rotation.x = s * -1.0; horn.rotation.z = -0.3; at(horn, -0.02, 0.3, s * 0.2, h); const ear = ell(0.08, 0.15, 0.05, C.COW); ear.rotation.x = s * 1.2; at(ear, -0.08, 0.14, s * 0.38, h); }
+    at(noShadow(ell(0.14, 0.12, 0.05, C.COWB)), 0.08, 0.14, 0.29, h); eyes(h, 0.26, 0.1, 0.2);
+    const tail = grp(-1.1, 1.4, 0, b); at(cyl(0.03, 0.03, 0.8, C.COW, 5), 0, -0.4, 0, tail); at(sph(0.1, C.COWB, {}, 6), 0, -0.82, 0, tail);
+    return { headG: h, legs: addLegs(b, [[0.55, 0.3], [0.55, -0.3], [-0.6, 0.3], [-0.6, -0.3]], { hipY: 0.85, upper: 0.4, lower: 0.38, r: 0.11, color: C.COW, hoof: C.COWB }), tail, wings: [] };
+  },
+  sheep(b) {
+    at(ell(0.82, 0.62, 0.62, C.WOOL), 0, 0.92, 0, b);
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * TAU, e = rnd(-0.4, 0.9); at(sph(rnd(0.22, 0.3), C.WOOL, {}, 9), Math.cos(a) * 0.72 * Math.cos(e), 0.92 + Math.sin(e) * 0.55, Math.sin(a) * 0.52 * Math.cos(e), b); }
+    const h = grp(0.9, 1.08, 0, b); at(ell(0.3, 0.27, 0.25, C.FACE), 0, 0, 0, h); at(sph(0.25, C.WOOL, {}, 9), -0.1, 0.22, 0, h); at(sph(0.17, C.WOOL, {}, 8), 0.08, 0.3, 0.1, h);
+    for (const s of [-1, 1]) { const ear = ell(0.07, 0.15, 0.09, C.FACE); ear.rotation.z = 0.5; ear.rotation.x = s * 0.4; at(ear, -0.02, 0.05, s * 0.3, h); }
+    at(noShadow(sph(0.05, 0xf0a0b0, {}, 6)), 0.3, -0.08, 0, h); eyes(h, 0.2, 0.08, 0.17, 0.05);
+    const tail = at(sph(0.13, C.WOOL, {}, 7), -0.9, 1.05, 0, b);
+    return { headG: h, legs: addLegs(b, [[0.42, 0.26], [0.42, -0.26], [-0.45, 0.26], [-0.45, -0.26]], { hipY: 0.6, upper: 0.3, lower: 0.28, r: 0.07, color: C.FACE, hoof: C.HOOF }), tail, wings: [] };
+  },
+  chicken(b) {
+    at(ell(0.42, 0.38, 0.36, C.HEN), 0, 0.62, 0, b);
+    [[-0.08, 0], [0, 0.1], [0, -0.1]].forEach(([dz, dy], i) => { const f = cone(0.09, 0.45, i ? 0xe8e2d2 : C.HEN, 5); f.rotation.z = 0.95; f.rotation.x = dz * 4; at(f, -0.42, 0.9 + dy, dz, b); });
+    const neck = cyl(0.12, 0.17, 0.32, C.HEN, 8); neck.rotation.z = -0.35; at(neck, 0.3, 0.9, 0, b);
+    const h = grp(0.42, 1.12, 0, b); at(sph(0.22, C.HEN, {}, 12), 0, 0, 0, h);
+    at(cone(0.06, 0.2, C.BEAK, 6), 0.28, -0.02, 0, h).rotation.z = -Math.PI / 2;
+    [[-0.06, 0.22], [0.03, 0.26], [0.11, 0.21]].forEach(([x, y]) => at(noShadow(sph(0.065, C.RED, {}, 7)), x, y, 0, h)); at(noShadow(sph(0.055, C.RED, {}, 6)), 0.2, -0.15, 0, h);
+    eyes(h, 0.14, 0.06, 0.15, 0.04);
+    const wings = [-1, 1].map(s => { const piv = grp(0, 0.75, s * 0.28, b); const w = ell(0.3, 0.15, 0.06, 0xece6d8); at(w, -0.05, -0.1, s * 0.1, piv); return { piv, s }; });
+    return { headG: h, legs: addLegs(b, [[0.05, 0.12], [0.05, -0.12]], { hipY: 0.38, upper: 0.18, lower: 0.17, r: 0.035, color: C.BEAK, hoof: C.BEAK, foot: [0.2, 0.12] }), wings, bird: true };
+  },
+  horse(b) {
+    at(ell(1.15, 0.6, 0.52, C.HORSE), 0, 1.3, 0, b);
+    const neck = cyl(0.22, 0.34, 1.05, C.HORSE, 9); neck.rotation.z = -0.7; at(neck, 0.95, 1.75, 0, b);
+    for (let i = 0; i < 6; i++) at(box(0.14, 0.3, 0.12, C.HORSE2), 0.55 + i * 0.13, 1.78 + i * 0.12, 0, b);
+    const h = grp(1.38, 2.18, 0, b); const head = ell(0.44, 0.27, 0.23, C.HORSE); head.rotation.z = -0.35; at(head, 0, 0, 0, h);
+    at(ell(0.2, 0.17, 0.19, 0xb98b5c), 0.4, -0.18, 0, h); at(noShadow(ell(0.2, 0.09, 0.05, C.WHITE)), 0.18, 0.12, 0.18, h);
+    for (const s of [-1, 1]) { at(cone(0.06, 0.22, C.HORSE, 6), -0.12, 0.3, s * 0.12, h).rotation.x = s * 0.3; at(noShadow(sph(0.035, 0x3a2a1c, {}, 5)), 0.58, -0.2, s * 0.08, h); }
+    eyes(h, 0.12, 0.08, 0.2, 0.05);
+    const tail = grp(-1.15, 1.45, 0, b); const t = ell(0.13, 0.55, 0.13, C.HORSE2); t.rotation.z = 0.5; at(t, -0.15, -0.4, 0, tail);
+    return { headG: h, legs: addLegs(b, [[0.6, 0.26], [0.6, -0.26], [-0.65, 0.26], [-0.65, -0.26]], { hipY: 1.0, upper: 0.5, lower: 0.48, r: 0.09, color: C.HORSE, color2: 0x7a5230, hoof: C.HOOF }), tail, wings: [] };
+  },
+  goat(b) {
+    at(ell(0.85, 0.5, 0.46, C.GOAT), 0, 0.97, 0, b);
+    const neck = cyl(0.16, 0.22, 0.5, C.GOAT, 8); neck.rotation.z = -0.6; at(neck, 0.75, 1.18, 0, b);
+    const collar = mesh(new THREE.TorusGeometry(0.2, 0.04, 6, 12), 0x3b6fb6); collar.rotation.y = Math.PI / 2; collar.rotation.x = 0.6; at(collar, 0.85, 1.25, 0, b); at(sph(0.07, 0xf2c23a, {}, 7), 0.95, 1.12, 0, b);
+    const h = grp(1.0, 1.4, 0, b); at(ell(0.32, 0.27, 0.23, C.GOAT), 0, 0, 0, h);
+    at(cone(0.07, 0.26, 0xf2f0ea, 6), 0.2, -0.32, 0, h).rotation.z = Math.PI;
+    for (const s of [-1, 1]) { const horn = cone(0.05, 0.4, 0x6b5a46, 6); horn.rotation.z = 0.95; horn.rotation.x = s * 0.25; at(horn, -0.1, 0.3, s * 0.1, h); const ear = ell(0.06, 0.17, 0.09, C.GOAT2); ear.rotation.z = 0.9; ear.rotation.x = s * 0.5; at(ear, -0.05, 0.05, s * 0.3, h); }
+    at(noShadow(sph(0.05, 0x5a4a44, {}, 6)), 0.33, -0.06, 0, h); eyes(h, 0.2, 0.08, 0.18, 0.05);
+    const tail = at(cone(0.06, 0.25, C.GOAT, 5), -0.85, 1.22, 0, b); tail.rotation.z = 0.6;
+    return { headG: h, legs: addLegs(b, [[0.45, 0.22], [0.45, -0.22], [-0.5, 0.22], [-0.5, -0.22]], { hipY: 0.7, upper: 0.35, lower: 0.33, r: 0.065, color: C.GOAT, hoof: C.HOOF }), tail, wings: [] };
+  },
+  duck(b) {
+    at(ell(0.5, 0.33, 0.33, C.DUCK), 0, 0.48, 0, b);
+    const tail = ell(0.16, 0.1, 0.12, C.DUCK); tail.rotation.z = 0.6; at(tail, -0.5, 0.65, 0, b);
+    const neck = cyl(0.1, 0.14, 0.26, C.DUCK, 8); neck.rotation.z = -0.3; at(neck, 0.34, 0.72, 0, b);
+    const h = grp(0.44, 0.9, 0, b); at(sph(0.21, C.DUCK, {}, 12), 0, 0, 0, h); at(ell(0.17, 0.05, 0.12, C.BILL), 0.3, -0.04, 0, h); eyes(h, 0.13, 0.07, 0.15, 0.04);
+    const wings = [-1, 1].map(s => { const piv = grp(0, 0.58, s * 0.27, b); at(ell(0.32, 0.1, 0.05, 0xf0c52c), -0.05, -0.08, s * 0.08, piv); return { piv, s }; });
+    return { headG: h, legs: addLegs(b, [[0.02, 0.12], [0.02, -0.12]], { hipY: 0.26, upper: 0.12, lower: 0.11, r: 0.03, color: C.BILL, hoof: C.BILL, foot: [0.2, 0.16] }), wings, tail, bird: true };
+  },
+};
+BUILD.frog = function (b) {
+  at(ell(0.55, 0.32, 0.5, C.FROG), 0, 0.42, 0, b); at(noShadow(ell(0.44, 0.2, 0.42, C.FROG2)), 0.1, 0.32, 0, b);
+  for (const [x, z, r] of [[-0.2, 0.22, 0.07], [0.05, -0.25, 0.06], [-0.3, -0.1, 0.05]]) at(noShadow(sph(r, C.FROGD, {}, 6)), x, 0.72, z, b);
+  const h = grp(0.42, 0.62, 0, b); at(ell(0.3, 0.2, 0.38, C.FROG), 0, 0, 0, h);
+  for (const s of [-1, 1]) { at(sph(0.13, C.FROG, {}, 10), 0.02, 0.17, s * 0.2, h); at(noShadow(sph(0.1, C.WHITE, {}, 8)), 0.08, 0.2, s * 0.21, h); at(noShadow(sph(0.055, C.EYE, {}, 6)), 0.16, 0.21, s * 0.22, h); at(noShadow(sph(0.045, 0xff8fb1, {}, 6)), 0.22, -0.04, s * 0.25, h); }
+  const smile = mesh(new THREE.TorusGeometry(0.2, 0.02, 5, 12, Math.PI), C.FROGD); smile.rotation.set(0, Math.PI / 2, Math.PI); at(noShadow(smile), 0.26, 0.02, 0, h);
+  return { headG: h, legs: addLegs(b, [[0.3, 0.26], [0.3, -0.26], [-0.32, 0.36], [-0.32, -0.36]], { hipY: 0.3, upper: 0.16, lower: 0.15, r: 0.06, color: C.FROG, hoof: C.FROG2, foot: [0.24, 0.2] }), wings: [], hopper: true, signH: 1.9 };
+};
+
+/* ---- real animals: rigged, animated glTF models (all CC0, see CREDITS.md). Any that fail to load keep the toy above. ---- */
+// h = height in track units, roughly the toy's; idle and run are clip names; rate speeds up the run clip.
+const MODELS = {
+  pig: { file: 'models/Pig.glb', h: 1.5, idle: 'Armature|Idle', run: 'Armature|Jump', rate: 1.25 },
+  cow: { file: 'models/Cow.glb', h: 2.2, idle: 'Armature|Idle', run: 'Armature|Run', rate: 1 },
+  sheep: { file: 'models/Sheep.glb', h: 1.6, idle: 'Armature|Idle', run: 'Armature|Jump', rate: 1.3 },
+  horse: { file: 'models/Horse.glb', h: 2.6, idle: 'Armature|Idle', run: 'Armature|Run', rate: 1 },
+};
+const loaded = {};
+function prepModel(gltf, m) {
+  const root = gltf.scene, clip = c => THREE.AnimationClip.findByName(gltf.animations, c);
+  // Lambert like the rest of the farm; colours are converted so they sit with the hand-picked hex colours (colour management is off).
+  const toLambert = q => { const l = new THREE.MeshLambertMaterial({ color: q.color.clone().convertLinearToSRGB(), map: q.map || null, transparent: q.transparent, opacity: q.opacity }); if (l.map) l.map.colorSpace = THREE.NoColorSpace; return l; };
+  root.traverse(o => { if (!o.isMesh) return; o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; o.userData.shared = true; o.material = Array.isArray(o.material) ? o.material.map(toLambert) : toLambert(o.material); });
+  const idle = clip(m.idle), run = clip(m.run);
+  // Measure in the idle pose, then scale to height h, stand on y = 0, and centre on the origin.
+  const mx = new THREE.AnimationMixer(root); mx.clipAction(idle).play(); mx.update(0); root.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(root, true), size = bb.getSize(V(0, 0, 0)), c = bb.getCenter(V(0, 0, 0)); mx.stopAllAction();
+  return { root, idle, run, rate: m.rate, k: m.h / size.y, c, size, yaw: m.yaw ?? Math.PI / 2 };
+}
+function loadModels() {
+  const loader = new GLTFLoader();
+  return Promise.all(Object.entries(MODELS).map(([id, m]) => loader.loadAsync(m.file).then(g => { loaded[id] = prepModel(g, m); }).catch(e => console.warn(`Kept the toy ${id}: ${e.message || e}`))));
+}
+function buildModel(id, b) {
+  const M = loaded[id], holder = grp(0, 0, 0, b), inst = SkeletonUtils.clone(M.root);
+  holder.rotation.y = M.yaw; holder.scale.setScalar(M.k); holder.position.y = -M.c.y * M.k + M.size.y * M.k / 2;
+  inst.position.set(-M.c.x, 0, -M.c.z); holder.add(inst);
+  const mixer = new THREE.AnimationMixer(inst), idle = mixer.clipAction(M.idle), run = mixer.clipAction(M.run);
+  idle.time = rnd(0, M.idle.duration); idle.play();
+  const len = Math.max(M.size.x, M.size.z) * M.k, h = M.size.y * M.k, headG = grp(len * 0.4, h * 0.85, 0, b);
+  return { headG, legs: [], wings: [], mixer, acts: { idle, run }, cur: idle, rate: M.rate, signH: Math.max(2.0, h + 0.9) };
+}
+function buildRunnerObject(r) {
+  const root = grp(0, 0, 0, scene), g = grp(0, 0, 0, root), bodyG = grp(0, 0, 0, g);
+  const parts = loaded[r.id] ? buildModel(r.id, bodyG) : BUILD[r.id](bodyG), signH = parts.signH || (parts.bird ? 2.0 : 3.0);
+  const sign = textSprite(r.name, r.a.hex, '#ffffff'); sign.position.set(0, signH, 0); g.add(sign);
+  const heart = spriteOf(TEX.heart, 0.6, { depthTest: false }); heart.position.set(0, signH + 0.55, 0); heart.visible = false; g.add(heart);
+  const stars = [0, 1, 2].map(() => { const s = spriteOf(TEX.star, 0.35); s.visible = false; parts.headG.add(s); return s; });
+  const ring = mesh(new THREE.RingGeometry(1.5, 1.9, 24), 0xffd23f, { emissive: 0xffd23f, emissiveIntensity: 0.4, transparent: true, opacity: 0.75 }); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; ring.visible = false; ring.castShadow = false; g.add(ring);
+  return Object.assign({ root, g, bodyG, sign, heart, stars, ring, signY: sign.position.y }, parts);
+}
+
+/* ---------- The race ---------- */
+let mode = 'ready', runners = [], events = [], evG = null, projectiles = [], butterflies = [], floaters = [], confetti = null, confettiT0 = -99;
+let real = 0, time = 0, ts = 1, tsTarget = 1, raceClock = 0, curS = 0, clock = 0, lastStep = -1, introLane = -1, introOrder = [], leader = null, lastCall = -9, said = {}, crossAt = -1, slowAt = -1, flash = 0;
+const cam = { pos: null, look: null, fov: 50, orbit: 0 };
+const winner = () => runners.find(r => r.target);
+function makeRunner(a, lane) { return { a, id: a.id, name: a.name, lane, target: false, p: 0, v: 0, lat: 0, gait: rnd(0, TAU), seed: Math.random(), end: 1, c: 0, waves: [], offs: [], obj: null, flyT0: -9, nibT0: -9, stunT0: -9, hopT0: -9, jumpT0: -9, peckT: rnd(1, 4), dustT: 0 }; }
+
+/* Every racer follows a planned path from 0 to 1. The winner is picked before the start; the drama (who leads when) is random. */
+function plan() {
+  const win = winner(), others = shuffle(runners.filter(r => !r.target));
+  runners.forEach(r => { r.end = r.target ? 1 : 0.94 + Math.random() * 0.04; r.c = (Math.random() - 0.5) * 0.06; r.waves = [0, 1, 2].map(k => ({ a: .004 + Math.random() * .006, f: 1 + k + Math.random() * 1.5, ph: Math.random() * TAU })); r.p = 0; r.v = 0; r.offs = []; });
+  if (!others.length) return;
+  const shape = pick(['wire', 'wire', 'behind', 'midpack', 'trade', 'trade']), big = 0.035 + Math.random() * 0.02;
+  if (shape === 'wire') win.c = big; else if (shape === 'behind') win.c = -big; else if (shape === 'midpack') win.c = (Math.random() - 0.5) * 0.02;
+  else { win.c = 0; win.waves[0] = { a: big, f: 1, ph: Math.random() < 0.5 ? 0 : Math.PI }; }
+  const rival = others[0]; rival.end = 0.978 + Math.random() * 0.012; rival.c = shape === 'wire' ? big * 0.7 : shape === 'behind' ? big : (Math.random() - 0.5) * 0.05;
+  others.slice(1).forEach(r => { const story = pick(['fade', 'late', 'steady']); if (story === 'fade') r.c = 0.03 + Math.random() * 0.03; else if (story === 'late') { r.c = -0.03; r.end = 0.97 + Math.random() * 0.015; } });
+}
+const ease = s => { const a = 0.08; return s < a ? s * s / (2 * a * (1 - a / 2)) : (s - a / 2) / (1 - a / 2); };
+function offsetAt(r, s) {
+  let d = 0;
+  for (const o of r.offs) {
+    if (s <= o.s) continue;
+    const a = s - o.s, rise = o.rise, hold = 0.03; let f;
+    if (a < rise) f = a / rise; else if (a < rise + hold) f = 1;
+    else if (o.keep === 0) f = Math.max(0, (1 - s) / (1 - (o.s + rise + hold)));
+    else f = o.keep + (1 - o.keep) * Math.max(0, 1 - (a - rise - hold) / 0.3);
+    d += o.A * f;
+  }
+  return d;
+}
+function progress(r, s) { const env = Math.sin(Math.PI * s); let d = r.c * env; for (const w of r.waves) d += w.a * Math.sin(TAU * w.f * s + w.ph) * env; return r.end * ease(s) + d + offsetAt(r, s); }
+/* Silly things that happen on the way. Every push or pause fades out by the finish, so the chosen winner always crosses first. */
+function give(r, s, A, rise) { r.offs.push({ s, A, rise: rise || 0.02, keep: r.target ? 0 : 0.5 }); }
+function slowEv(type, v, s, A) {
+  give(v, s, A); const E = { type, s, who: v };
+  switch (type) {
+    case 'mud': return Object.assign(E, { hazard: 1, sfx: 'splat', stun: 1, line: `Splat! <b>${v.name}</b> slipped in the mud!` });
+    case 'water': return Object.assign(E, { hazard: 1, sfx: 'splash', stun: 1, line: `Splash! <b>${v.name}</b> got wet feet!` });
+    case 'flowers': return Object.assign(E, { hazard: 1, sfx: 'munch', nib: 1, line: `<b>${v.name}</b> stopped for a snack. Munch munch!` });
+    case 'butterfly': return Object.assign(E, { sPre: s - 0.05, sfx: 'flutter', line: `Ooh, a butterfly! <b>${v.name}</b> got distracted.` });
+    case 'hay': return Object.assign(E, { hazard: 1, sfx: 'thud', stun: 1, line: `Bonk! <b>${v.name}</b> bumped into a hay bale!` });
+    default: return Object.assign(E, { type: 'hurdle', hazard: 1, sfx: 'thud', stun: 1, line: `Whoops! <b>${v.name}</b> tripped over the little fence.` });
+  }
+}
+function boostEv(type, a, s, A) {
+  give(a, s, A, 0.05); const E = { type, s, who: a, boost: 1 };
+  switch (type) {
+    case 'mud': return Object.assign(E, { hazard: 1, sfx: 'splat', call: 1, line: `<b>Wilbur</b> found a mud puddle. Wheee!` });
+    case 'water': return Object.assign(E, { hazard: 1, sfx: 'splash', call: 1, line: a.id === 'frog' ? `<b>Hoppy</b> found a puddle. Ribbit splash!` : `<b>Puddles</b> found a puddle. Splish splash!` });
+    case 'hay': return Object.assign(E, { hazard: 1, sfx: 'thud', call: 1, launch: 1, line: `<b>Billy</b> sent the hay bale flying!` });
+    case 'hurdle': return Object.assign(E, { hazard: 1, sfx: 'boing', jump: 1, line: a.id === 'horse' ? `<b>Buttercup</b> jumps the little fence. Wow!` : a.id === 'frog' ? `<b>Hoppy</b> hops right over the fence. Boing!` : `<b>Billy</b> hops right over the fence!` });
+    case 'apple': return Object.assign(E, { sPre: s - 0.045, sfx: 'crunch', line: `The farmer tossed <b>${a.name}</b> an apple. Crunch!` });
+    case 'flap': return Object.assign(E, { sfx: 'flutter', call: 1, fly: 1, line: a.id === 'chicken' ? `<b>Henrietta</b> is flapping. Look at Henrietta fly!` : `<b>Puddles</b> flaps those wings and zooms!` });
+    default: return Object.assign(E, { type: 'zoom', sfx: 'whoosh', line: `<b>${a.name}</b> finds a burst of speed!` });
+  }
+}
+const TYPES = ['mud', 'water', 'flowers', 'butterfly', 'hay', 'hurdle', 'apple', 'flap', 'moo'];
+function buildEvent(type, s, used) {
+  const has = id => runners.find(r => r.id === id);
+  const fresh = c => { if (!c.length) return null; const f = c.filter(r => !used.has(r)), r = pick(f.length ? f : c); used.add(r); return r; };
+  const big = () => rnd(0.05, 0.07);
+  switch (type) {
+    case 'mud': case 'water': { const star = type === 'mud' ? has('pig') : pick([has('duck'), has('frog')].filter(Boolean)); if (star && !used.has(star) && Math.random() < 0.75) { used.add(star); return boostEv(type, star, s, big()); } const v = fresh(runners.filter(r => r !== star)); return v && slowEv(type, v, s, -big()); }
+    case 'flowers': { const v = fresh(runners.filter(r => ['sheep', 'goat', 'cow', 'horse'].includes(r.id))); return v && slowEv(type, v, s, -big()); }
+    case 'butterfly': { const v = fresh(runners); return v && slowEv(type, v, s, -big()); }
+    case 'hay': { const goat = has('goat'); if (goat && !used.has(goat) && Math.random() < 0.75) { used.add(goat); return boostEv(type, goat, s, big()); } const v = fresh(runners.filter(r => r !== goat)); return v && slowEv(type, v, s, -big()); }
+    case 'hurdle': { const j = runners.filter(r => ['horse', 'goat', 'frog'].includes(r.id) && !used.has(r)); if (j.length && Math.random() < 0.8) { const a = pick(j); used.add(a); return boostEv(type, a, s, big()); } const v = fresh(runners.filter(r => r.id !== 'horse')); return v && slowEv(type, v, s, -big()); }
+    case 'apple': { const a = fresh(runners); return a && boostEv(type, a, s, big()); }
+    case 'flap': { const a = fresh(runners.filter(r => r.id === 'chicken' || r.id === 'duck')); return a && boostEv(type, a, s, big()); }
+    case 'moo': { const cow = has('cow'); if (!cow || used.has(cow)) return null; used.add(cow); const others = runners.filter(r => r !== cow); others.forEach(o => give(o, s, -0.03)); return { type, s, who: cow, others, call: 1, moo: 1, line: `MOOOO! <b>Daisy</b>'s big moo surprised everybody!` }; }
+  }
+}
+function buildLate(s, win) {
+  const P = r => progress(r, s), ahead = runners.filter(r => !r.target && P(r) > P(win)).sort((a, b) => P(b) - P(a));
+  if (ahead.length) {
+    const v = ahead[0], A = -Math.min(0.1, P(v) - P(win) + 0.025 + Math.random() * 0.02);
+    const avoid = { pig: 'mud', duck: 'water', horse: 'hurdle', goat: 'hay' }[v.id];
+    return slowEv(pick(['mud', 'water', 'butterfly', 'hurdle'].filter(t => t !== avoid)), v, s, A);
+  }
+  const ch = runners.filter(r => !r.target); return ch.length ? boostEv('zoom', pick(ch), s, 0.05) : null;
+}
+function planEvents() {
+  events = []; if (runners.length < 2) return;
+  const win = winner(), used = new Set(), want = runners.length === 2 ? 2 : 3 + (runners.length >= 6 && Math.random() < 0.5 ? 1 : 0);
+  const slots = []; let s = 0.12 + Math.random() * 0.05; while (slots.length < want && s < 0.76) { slots.push(s); s += 0.16 + Math.random() * 0.06; }
+  let types = shuffle(TYPES);
+  slots.forEach(sh => { for (let k = 0; k < types.length; k++) { const ev = buildEvent(types[k], sh, used); if (ev) { events.push(ev); types.splice(k, 1); return; } } });
+  const late = buildLate(0.85 + Math.random() * 0.05, win); if (late) events.push(late);
+  for (const r of runners) if (!r.target) r.end = Math.min(r.end, 0.985 - offsetAt(r, 1));
+  for (const ev of events) { ev.hx = START_X + L * (progress(ev.who, ev.s) + 0.008); ev.hz = laneZ(ev.who.lane); }
+  events.sort((a, b) => a.s - b.s);
+}
+const flat = (r, color, sx, sz) => { const m = new THREE.Mesh(new THREE.CircleGeometry(r, 22), mat(color)); m.rotation.x = -Math.PI / 2; m.scale.set(sx, sz, 1); m.receiveShadow = true; return m; };
+function baleGroup() { const g = new THREE.Group(); const b = cyl(0.7, 0.7, 1.3, C.HAY, 14); b.rotation.z = Math.PI / 2; g.add(b); const band = cyl(0.72, 0.72, 0.16, 0xc69a3a, 14); band.rotation.z = Math.PI / 2; g.add(band); return g; }
+function spawnEventObjects() {
+  clearEventObjects(); evG = grp(0, 0, 0, scene);
+  for (const ev of events) {
+    if (!ev.hazard) continue;
+    if (ev.type === 'mud') at(flat(1, 0x6b4423, 1.15, 0.75), ev.hx, 0.045, ev.hz, evG);
+    else if (ev.type === 'water') at(flat(1, 0x5ab4ea, 1.2, 0.8), ev.hx, 0.045, ev.hz, evG);
+    else if (ev.type === 'flowers') for (let i = 0; i < 6; i++) { const f = grp(ev.hx + rnd(-0.7, 0.7), 0, ev.hz + rnd(-0.6, 0.6), evG); at(cyl(0.025, 0.03, 0.45, 0x4f8f2f, 5), 0, 0.22, 0, f); at(noShadow(sph(0.12, pick([0xff7eb6, 0xffd23f, 0xff5c5c, 0xc77dff, 0xffffff]), {}, 7)), 0, 0.5, 0, f); }
+    else if (ev.type === 'hay') { ev.bale = at(baleGroup(), ev.hx + 0.5, 0.7, ev.hz, evG); ev.bale.rotation.y = rnd(-0.3, 0.3); }
+    else if (ev.type === 'hurdle') { const h = grp(ev.hx + 0.4, 0, ev.hz, evG); for (const s of [-1, 1]) at(box(0.1, 0.75, 0.1, C.FENCE), 0, 0.37, s * LANE_W * 0.42, h); [0.35, 0.65].forEach(y => at(box(0.07, 0.08, LANE_W * 0.9, C.FENCE), 0, y, 0, h)); }
+  }
+}
+function clearEventObjects() {
+  if (evG) { disposeGroup(evG); scene.remove(evG); evG = null; }
+  for (const p of projectiles) scene.remove(p.obj); projectiles = [];
+  for (const b of butterflies) scene.remove(b.sp); butterflies = [];
+  for (const f of floaters) scene.remove(f.sp); floaters = [];
+}
+const headPos = r => { const v = V(0, 0, 0); r.obj.headG.getWorldPosition(v); return v; };
+function preEvent(ev) {
+  if (ev.type === 'butterfly') { const sp = spriteOf(TEX.butterfly, 0.6); sp.position.copy(headPos(ev.who)).add(V(2, 1.5, 1)); scene.add(sp); butterflies.push({ sp, ev }); }
+  if (ev.type === 'apple') { const sp = spriteOf(TEX.apple, 0.55); const to = V(ev.hx - 0.3, 0.6, ev.hz); sp.position.set(to.x + 5, 1.6, HW + 1.2); scene.add(sp); projectiles.push({ obj: sp, from: sp.position.clone(), to, h: 3, t0: raceClock, dur: (ev.s - ev.sPre) * RACE_T, race: true }); ev.apple = sp; }
+}
+function hitEvent(ev) {
+  const r = ev.who, t = real;
+  feed(ev.line); setCommentary(ev.line.replace(/<[^>]+>/g, ''));
+  if (ev.sfx) play(ev.sfx); if (ev.call) setTimeout(() => play(r.id), 120);
+  const here = V(START_X + L * r.p, 0.3, r.lat);
+  if (ev.stun) r.stunT0 = t; if (ev.nib) r.nibT0 = t; if (ev.fly) r.flyT0 = t; if (ev.jump) r.jumpT0 = t;
+  if (ev.type === 'mud') burst(here, [0x6b4423, 0x8a5a2b, 0x5a3b1e], 26, 3, 5);
+  if (ev.type === 'water') burst(here, [0x5ab4ea, 0x9fd9ff, 0xffffff], 26, 3, 5);
+  if (ev.type === 'flowers') burst(here.clone().add(V(0.8, 0.6, 0)), [0xff7eb6, 0xffd23f, 0x4f8f2f], 14, 1.5, 3);
+  if (ev.type === 'flap') burst(here.clone().add(V(-0.3, 0.8, 0)), [0xffffff, 0xf2eee4], 16, 2, 3);
+  if (ev.type === 'zoom') burst(here.clone().add(V(-0.8, 0.2, 0)), [0xd9c4a0, 0xc9a26d], 20, 2.5, 3);
+  if (ev.type === 'hurdle' && !ev.boost) burst(here, [0xfdf6ea, 0xd9c4a0], 12, 2, 3);
+  if (ev.type === 'apple' && ev.apple) { scene.remove(ev.apple); projectiles = projectiles.filter(p => p.obj !== ev.apple); burst(here.clone().add(V(0.6, 0.8, 0)), [0xe23b2e, 0xfff3d6], 14, 1.5, 3); }
+  if (ev.type === 'hay') {
+    if (ev.launch && ev.bale) { const from = ev.bale.position.clone(), side = ev.hz >= 0 ? 1 : -1; projectiles.push({ obj: ev.bale, from, to: V(from.x + 6, 0.7, Math.max(HW + 2.5, Math.abs(ev.hz) + 4) * side), h: 3.5, t0: real, dur: 1.0, spin: 1, land: p => { burst(p, [C.HAY, 0xc69a3a], 20, 2.5, 4); play('thud'); } }); }
+    else if (ev.bale) { ev.bale.rotation.x = 0.5; ev.bale.position.x += 0.8; burst(here, [C.HAY, 0xc69a3a], 14, 2, 3); }
+  }
+  if (ev.moo) { const sp = spriteOf(TEX.moo, 1); sp.scale.set(2.6, 1.3, 1); sp.position.copy(headPos(r)).add(V(0.5, 1.2, 0)); scene.add(sp); floaters.push({ sp, t0: t, dur: 1.3 }); ev.others.forEach(o => { o.hopT0 = t; }); shake = 0.6; }
+}
+let shake = 0;
+/* particles */
+const bitPool = [];
+function burst(pos, colors, count, speed, up) {
+  for (let i = 0; i < count; i++) {
+    let b = bitPool.find(b => !b.m.visible);
+    if (!b) { if (bitPool.length > 180) break; const m = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.14), mat(0xffffff)); m.castShadow = false; scene.add(m); b = { m, v: V(0, 0, 0), life: 0 }; bitPool.push(b); }
+    b.m.material = mat(pick(colors)); b.m.position.copy(pos); b.m.visible = true; b.v.set(rnd(-1, 1) * speed, rnd(0.5, 1) * up, rnd(-1, 1) * speed); b.life = rnd(0.5, 1.0); b.m.scale.setScalar(rnd(0.6, 1.4));
+  }
+}
+function stepBits(dt) { for (const b of bitPool) { if (!b.m.visible) continue; b.life -= dt; b.v.y -= 14 * dt; b.m.position.addScaledVector(b.v, dt); b.m.rotation.x += dt * 6; b.m.rotation.z += dt * 4; if (b.m.position.y < 0.06 && b.v.y < 0) { b.m.position.y = 0.06; b.v.multiplyScalar(0.3); b.v.y = Math.abs(b.v.y) * 0.3; } if (b.life <= 0) b.m.visible = false; } }
+const puffPool = [];
+function puff(pos) {
+  let p = puffPool.find(p => !p.sp.visible);
+  if (!p) { if (puffPool.length > 60) return; const sp = spriteOf(TEX.puff, 1, { color: 0xd9c4a0, opacity: 0.5 }); scene.add(sp); p = { sp, t: 0 }; puffPool.push(p); }
+  p.sp.position.copy(pos); p.sp.visible = true; p.t = 0;
+}
+function stepPuffs(dt) { for (const p of puffPool) { if (!p.sp.visible) continue; p.t += dt; const k = p.t / 0.7; if (k >= 1) { p.sp.visible = false; continue; } p.sp.scale.setScalar(0.5 + k * 1.2); p.sp.material.opacity = 0.45 * (1 - k); p.sp.position.y += dt * 0.6; } }
+function makeConfetti() {
+  const N = 240, pos = new Float32Array(N * 3), col = new Float32Array(N * 3), pal = [[1, .3, .4], [1, .85, .2], [.3, .7, 1], [.4, .85, .4], [1, .55, .85], [1, 1, 1]];
+  for (let i = 0; i < N; i++) { const c = pick(pal); col.set(c, i * 3); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  confetti = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.3, vertexColors: true })); confetti.visible = false; confetti.userData.v = new Float32Array(N * 3); scene.add(confetti);
+}
+function popConfetti(cx, cz) { const p = confetti.geometry.attributes.position, v = confetti.userData.v; for (let i = 0; i < p.count; i++) { p.setXYZ(i, cx + rnd(-4, 4), rnd(5, 12), cz + rnd(-5, 5)); v[i * 3] = rnd(-1, 1); v[i * 3 + 1] = rnd(-1.5, -0.6); v[i * 3 + 2] = rnd(-1, 1); } p.needsUpdate = true; confetti.visible = true; confettiT0 = real; }
+function stepConfetti(dt) {
+  if (!confetti || !confetti.visible) return; const p = confetti.geometry.attributes.position, v = confetti.userData.v; let any = false;
+  for (let i = 0; i < p.count; i++) { let y = p.getY(i); if (y <= 0.05) { if (real - confettiT0 < 7) { y = rnd(8, 12); } else continue; } any = true; p.setXYZ(i, p.getX(i) + (v[i * 3] + Math.sin(real * 3 + i)) * dt * 1.2, y + v[i * 3 + 1] * dt * 1.6, p.getZ(i) + v[i * 3 + 2] * dt); }
+  p.needsUpdate = true; if (!any) confetti.visible = false;
+}
+function stepProjectiles(dt) {
+  for (const p of projectiles.slice()) {
+    const tt = p.race ? raceClock : real, k = clamp((tt - p.t0) / p.dur, 0, 1);
+    p.obj.position.lerpVectors(p.from, p.to, k); p.obj.position.y += 4 * k * (1 - k) * p.h; if (p.spin) { p.obj.rotation.z += dt * 9; p.obj.rotation.y += dt * 3; }
+    if (k >= 1) { if (p.land) p.land(p.obj.position.clone()); if (p.spin) { p.obj.rotation.set(0, rnd(0, TAU), Math.PI / 2 * 0); } projectiles = projectiles.filter(q => q !== p); }
+  }
+}
+function stepFloaters(dt) {
+  for (const b of butterflies.slice()) {
+    const done = curS > b.ev.s + 0.07 || mode !== 'race';
+    if (!done) { const hp = headPos(b.ev.who); b.sp.position.lerp(hp.add(V(0.5, 0.6 + Math.sin(real * 7) * 0.15, 0.45 * Math.sin(real * 3))), 1 - Math.exp(-dt * 5)); }
+    else { b.sp.position.x += dt * 2; b.sp.position.y += dt * 2.5; b.sp.material.opacity = Math.max(0, (b.sp.material.opacity || 1) - dt * 0.7); if (b.sp.material.opacity <= 0) { scene.remove(b.sp); butterflies = butterflies.filter(x => x !== b); continue; } }
+    b.sp.scale.set(0.6 * (0.35 + Math.abs(Math.cos(real * 22))), 0.6, 1);
+  }
+  for (const f of floaters.slice()) { const k = (real - f.t0) / f.dur; if (k >= 1) { scene.remove(f.sp); floaters = floaters.filter(x => x !== f); continue; } f.sp.position.y += dt * 1.2; f.sp.material.opacity = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3; const sc = 1 + Math.min(k * 4, 1) * 0.4; f.sp.scale.set(2.6 * sc, 1.3 * sc, 1); }
+}
+
+/* ---- overlays ---- */
+const countOv = $('countOv'), countTxt = $('countTxt'), bannerOv = $('bannerOv'), bannerTxt = $('bannerTxt'), flashOv = $('flashOv'), feedOv = $('feedOv'), goBtn = $('goBtn');
+function showCount(t) { countOv.hidden = false; countTxt.textContent = t; countTxt.classList.remove('pop'); void countTxt.offsetWidth; countTxt.classList.add('pop'); }
+function hideCount() { countOv.hidden = true; }
+function setBanner(html) { bannerTxt.innerHTML = html; bannerOv.hidden = false; }
+function setCommentary(t) { $('commentary').textContent = t; }
+function feed(html) { const el = document.createElement('div'); el.className = 'feed-line'; el.innerHTML = html; feedOv.appendChild(el); while (feedOv.children.length > 3) feedOv.firstChild.remove(); setTimeout(() => { if (el.parentNode) el.remove(); }, 5500); }
+
+/* ---- camera ---- */
+function updateCamera(rdt) {
+  let pos, look, stiff = 2.5, fovT = 50; const nn = Math.max(n, 2);
+  const ps = runners.map(r => r.p), lead = ps.length ? Math.max(...ps) : 0, back = ps.length ? Math.min(...ps) : 0, w = winner(), wz = w ? w.lat : 0;
+  if (mode === 'ready' || mode === 'done' && !w) { cam.orbit += rdt * 0.08; const a = 0.75 + Math.sin(cam.orbit) * 0.45, R = 13 + nn * 1.2, cx = START_X + 1; pos = V(cx + Math.cos(a) * R * 0.9, 5 + nn * 0.3, Math.sin(a) * R); look = V(cx + 1, 1, 0); stiff = 1.5; }
+  else if (mode === 'intro') { const k = Math.max(0, introLane), z = introOrder[k] ? introOrder[k].lat : 0; pos = V(START_X + 5.2, 2.4, z + 3.4); look = V(START_X + 0.9, 1.1, z); stiff = 3.5; }
+  else if (mode === 'rooster' || mode === 'countdown') { pos = V(START_X + 7, 4.8, HW + 9); look = V(START_X + 0.5, 1, 0); stiff = 2; }
+  else if (mode === 'race' && lead > 0.84) { const lx = START_X + L * Math.min(lead, 1), bx = START_X + L * Math.max(back, 0.8); pos = V(FIN_X + 10, 4.6, HW + 7); look = V(bx + (lx - bx) * 0.65, 0.9, 0); stiff = 2.4; fovT = 44; }
+  else if (mode === 'race') { const midX = START_X + L * (lead + back) / 2, spread = (lead - back) * L; pos = V(midX + 5 + spread * 0.1, 4.6 + spread * 0.12 + nn * 0.2, HW + 7.5 + spread * 0.25 + nn * 0.35); look = V(midX + 3, 1, -nn * 0.15); stiff = 3; }
+  else if (mode === 'after') { const k = clamp((real - crossAt) / 3, 0, 1), a = 1.1 - k * 0.7, R = 7 + nn * 0.45; pos = V(FIN_X + 3.5 + Math.cos(a) * R, 2.4 + k * 1.2, wz * 0.5 + Math.sin(a) * R); look = V(FIN_X + 3.5, 1, wz * 0.6); stiff = 2; }
+  else { pos = V(FIN_X + 9.5, 2.4 + nn * 0.15, wz + 5 + nn * 0.25); look = V(FIN_X + 5.5, 1.0, wz); stiff = 1.6; }
+  if (!cam.pos) { cam.pos = pos.clone(); cam.look = look.clone(); }
+  cam.pos.lerp(pos, 1 - Math.exp(-rdt * stiff)); cam.look.lerp(look, 1 - Math.exp(-rdt * stiff));
+  shake = Math.max(0, shake - rdt * 1.4);
+  camera.position.copy(cam.pos); if (shake > 0) camera.position.add(V(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).multiplyScalar(shake * 0.3));
+  cam.fov += (fovT - cam.fov) * (1 - Math.exp(-rdt * 2)); camera.lookAt(cam.look); camera.fov = cam.fov; camera.updateProjectionMatrix();
+  sun.target.position.copy(cam.look); sun.position.copy(cam.look).add(V(-14, 38, 22));
+}
+
+/* ---- per frame ---- */
+const capWin = 1 + 6 / L, capLose = 1 + 2.6 / L;
+function update(rdt) {
+  real += rdt; flash = Math.max(0, flash - rdt * 1.6);
+  ts += (tsTarget - ts) * Math.min(1, rdt * 10);
+  const dt = rdt * ts; time += dt;
+  if (mode === 'intro') {
+    clock += rdt; const k = Math.floor((clock - 0.4) / INTRO_STEP);
+    if (k >= 0 && k < introOrder.length && k !== introLane) { introLane = k; const r = introOrder[k]; runners.forEach(x => { x.obj.ring.visible = x === r; const b = x.obj.sign.userData.base, m = x === r ? 1.5 : 1; x.obj.sign.scale.set(b.x * m, b.y * m, 1); }); feed(`<b>${r.name}</b> the ${r.a.kind}!`); setCommentary(`${r.name} the ${r.a.kind}!`); play(r.id); r.hopT0 = real; }
+    if (clock >= 0.4 + INTRO_STEP * introOrder.length + 0.3) { mode = 'rooster'; clock = 0; runners.forEach(x => { x.obj.ring.visible = false; const b = x.obj.sign.userData.base; x.obj.sign.scale.set(b.x, b.y, 1); }); play('rooster'); setCommentary('Cock-a-doodle-doo! Get ready!'); }
+  } else if (mode === 'rooster') { clock += rdt; if (clock >= ROOSTER_T) { mode = 'countdown'; clock = 0; lastStep = -1; } }
+  else if (mode === 'countdown') {
+    clock += rdt; const step = Math.floor(clock / STEP);
+    if (step !== lastStep && step < 3) { lastStep = step; showCount(String(3 - step)); play('bell'); setCommentary(['Ready...', 'Set...', 'Here we go...'][step]); }
+    if (clock >= STEP * 3) {
+      mode = 'race'; raceClock = 0; curS = 0; leader = null; lastCall = -9; said = {}; slowAt = -1; showCount('GO!'); setTimeout(hideCount, 700); play('go');
+      music('hoedown', () => 150 + 40 * curS, true); feed(`And they're off!`); setCommentary(`And they're off!`);
+      const fav = runners.find(r => r.id === S.fav); if (fav) setTimeout(() => feed(`Go, <b>${fav.name}</b>, go!`), 900);
+    }
+  } else if (mode === 'race' || mode === 'after') {
+    raceClock += dt; const s = Math.min(1, raceClock / RACE_T);
+    if (mode === 'race') {
+      for (const r of runners) { const np = Math.max(r.p, progress(r, s)); r.v = (np - r.p) / Math.max(dt, 1e-4); r.p = np; }
+      curS = s;
+      const sorted = [...runners].sort((a, b) => b.p - a.p);
+      if (s > 0.06 && sorted[0] !== leader && raceClock - lastCall > 1.2) { leader = sorted[0]; lastCall = raceClock; const line = pick([`<b>${leader.name}</b> takes the lead!`, `Here comes <b>${leader.name}</b>!`, `Look at <b>${leader.name}</b> go!`, `<b>${leader.name}</b> is out in front!`]); feed(line); setCommentary(line.replace(/<[^>]+>/g, '')); }
+      if (!leader) leader = sorted[0];
+      if (s > 0.3 && s < 0.9 && sorted[0].p - sorted[1].p < 0.006 && raceClock - lastCall > 2.5 && !said.neck) { said.neck = 1; lastCall = raceClock; feed(`<b>${sorted[0].name}</b> and <b>${sorted[1].name}</b> are neck and neck!`); }
+      if (!said.half && sorted[0].p > 0.5) { said.half = 1; if (raceClock - lastCall > 0.8) { lastCall = raceClock; feed('Halfway there!'); } }
+      if (!said.q3 && sorted[0].p > 0.78) { said.q3 = 1; if (raceClock - lastCall > 0.8) { lastCall = raceClock; feed('Here comes the finish line!'); } }
+      if (slowAt < 0 && !reduced && winner().p > 0.986 && sorted[1].p > 0.93) { slowAt = real; tsTarget = 0.22; }
+      for (const ev of events) {
+        if (ev.sPre != null && !ev.pre && s >= ev.sPre) { ev.pre = true; preEvent(ev); }
+        if (!ev.hit && s >= ev.s) { ev.hit = true; hitEvent(ev); }
+      }
+      if (s >= 1) cross();
+    } else {
+      let moving = false;
+      for (const r of runners) { const cap = r.target ? capWin : capLose; if (r.p < 1) r.v = Math.max(r.v, 0.6 / RACE_T); else r.v *= Math.exp(-dt * (r.target ? 1.6 : 3)); r.p = Math.min(cap, r.p + r.v * dt); if (r.p >= cap) r.v = 0; if (r.p < 1 || r.v > 0.003) moving = true; }
+      if (!moving || raceClock > RACE_T + 6) settle();
+    }
+  }
+  if (crossAt >= 0 && tsTarget < 1 && real - crossAt > 1.0) tsTarget = 1;
+  const racing = mode === 'race' || mode === 'after';
+  for (const r of runners) {
+    const o = r.obj; if (!o) continue;
+    const amp = racing ? clamp(r.v * RACE_T * 1.1, 0, 1) : 0;
+    r.gait += dt * (4 + (o.bird ? 16 : 12) * amp);
+    r.lat += (laneZ(r.lane) + Math.sin(time * 1.3 + r.seed * 9) * 0.12 * amp - r.lat) * Math.min(1, dt * 3);
+    const flyK = Math.sin(Math.PI * clamp(1 - (real - r.flyT0) / 1.3, 0, 1)), jumpK = clamp((real - r.jumpT0) / 0.7, 0, 1), hopK = clamp((real - r.hopT0) / 0.5, 0, 1), nibK = clamp((real - r.nibT0) / 1.0, 0, 1), stunK = real - r.stunT0;
+    const win = mode === 'done' && r.target;
+    const bob = o.hopper ? (amp > 0 ? Math.abs(Math.sin(r.gait * 0.5)) * 0.6 * amp : 0) : (amp > 0 ? Math.abs(Math.sin(r.gait)) * (o.bird ? 0.06 : 0.1) * amp * (o.mixer ? 0.3 : 1) : Math.sin(time * 2 + r.seed * 9) * 0.012);
+    const lift = flyK * 1.3 + 4 * jumpK * (1 - jumpK) * 1.3 + Math.sin(Math.PI * hopK) * 0.35 * (hopK < 1 ? 1 : 0) + (win ? Math.abs(Math.sin(time * 5)) * 0.4 : 0);
+    o.bodyG.position.y = bob + lift; o.bodyG.rotation.z = amp > 0 ? Math.sin(r.gait) * 0.06 * amp : 0;
+    o.bodyG.rotation.x = stunK >= 0 && stunK < 0.8 ? Math.sin(stunK * 12) * 0.12 * (1 - stunK / 0.8) : 0;
+    o.g.position.set(START_X + L * r.p, 0, r.lat);
+    const faceCam = win && cam.pos ? Math.atan2(-(cam.pos.z - r.lat), cam.pos.x - (START_X + L * r.p)) : 0; o.g.rotation.y += (faceCam - o.g.rotation.y) * Math.min(1, rdt * 2);
+    const idleTurn = !racing && !win ? Math.sin(time * 0.7 + r.seed * 9) * 0.3 : 0;
+    o.headG.rotation.y = idleTurn; o.headG.rotation.z = (amp > 0 ? Math.sin(r.gait * (o.bird ? 1.5 : 1)) * (o.bird ? 0.15 : 0.08) * amp : Math.sin(time * 1.5 + r.seed * 7) * 0.05) - (nibK < 1 ? Math.sin(Math.PI * nibK) * 0.9 : 0);
+    if (!racing && o.bird) { r.peckT -= rdt; if (r.peckT < 0.5 && r.peckT > 0) o.headG.rotation.z -= Math.sin(r.peckT * Math.PI * 4) * 0.5; if (r.peckT <= 0) r.peckT = rnd(2, 5); }
+    for (const Lg of o.legs) { const ph = r.gait * (o.bird ? 1.5 : 1) + Lg.off, sn = Math.sin(ph), cs = Math.cos(ph); Lg.hip.rotation.z = (Lg.front ? 0.1 : -0.06) + 0.6 * amp * sn; Lg.knee.rotation.z = (Lg.front ? -1 : 1) * amp * (0.15 + 0.55 * Math.max(0, -cs)); }
+    for (const wg of o.wings) wg.piv.rotation.x = wg.s * (flyK > 0 || win ? 0.3 + Math.abs(Math.sin(real * 26)) * 1.1 : 0.12 + amp * Math.sin(r.gait * 2) * 0.2);
+    if (o.mixer) {
+      const want = amp > 0.05 || flyK > 0 || win ? o.acts.run : o.acts.idle;
+      if (want !== o.cur) { want.reset().fadeIn(0.25).play(); o.cur.fadeOut(0.25); o.cur = want; }
+      o.acts.run.timeScale = o.rate * (win ? 1 : 0.55 + 0.75 * amp); o.mixer.update(dt);
+    }
+    if (o.tail) { o.tail.rotation.y = Math.sin(real * (win ? 14 : 6) + r.seed * 5) * 0.35 * (win ? 1 : 0.6); }
+    o.stars.forEach((st, k) => { st.visible = stunK >= 0 && stunK < 1.1; if (st.visible) { const a = stunK * 7 + k * TAU / 3; st.position.set(-0.1 + Math.cos(a) * 0.45, 0.5 + Math.sin(a) * 0.1, Math.sin(a) * 0.35); } });
+    o.sign.position.y = o.signY + lift * 0.6; o.heart.position.y = o.signY + 0.55 + lift * 0.6 + (S.fav === r.id ? Math.sin(real * 4) * 0.08 : 0);
+    if (racing && amp > 0.45) { r.dustT -= dt; if (r.dustT <= 0) { r.dustT = rnd(0.12, 0.22); puff(V(START_X + L * r.p - 0.9, 0.2, r.lat + rnd(-0.3, 0.3))); } }
+  }
+  // scenery life
+  if (world.blades) world.blades.rotation.z += rdt * 0.9;
+  for (const c of world.clouds) { c.position.x += rdt * 0.7; if (c.position.x > 160) c.position.x = -160; }
+  const excited = mode === 'race' || mode === 'after' || mode === 'done';
+  for (const ch of world.chicks) ch.g.position.y = Math.abs(Math.sin(time * (excited ? 7 : 2.5) + ch.ph)) * (excited ? 0.3 : 0.05);
+  if (world.farmer) { const wave = mode === 'rooster' || mode === 'after' || mode === 'done' || (mode === 'race' && curS > 0.8); world.farmer.arms[1].rotation.z = wave ? -2.6 + Math.sin(real * 8) * 0.5 : -0.3 + Math.sin(real * 1.5) * 0.08; world.farmer.arms[0].rotation.z = wave ? 0.5 : 0.2; }
+  if (world.tape >= 0) world.ribbon.forEach((h, i) => { const tt = real - world.tape, side = i ? 1 : -1; h.rotation.y = side * (1.5 - 0.6 * Math.exp(-3 * tt) * Math.cos(4 * tt)); });
+  stepBits(dt); stepPuffs(dt); stepConfetti(dt); stepProjectiles(dt); stepFloaters(dt);
+  updateCamera(rdt);
+  flashOv.style.opacity = flash * 0.85;
+}
+function cross() {
+  const w = winner(); mode = 'after'; crossAt = real; world.tape = real; flash = 0.7; stopMusic(0.3); play('win'); setTimeout(() => play('cheer'), 150); setTimeout(() => play(w.id), 700);
+  setBanner(`${w.name} wins!<small>${w.a.say}</small>`); feed(`<b>${w.name}</b> wins the race! ${w.a.say}`); setCommentary(`${w.name} the ${w.a.kind} wins the race! ${w.a.say}`);
+  $('headline').innerHTML = `<span class="who">${w.name} the ${w.a.kind}</span> wins the race!`;
+  S.wins[w.id] = (S.wins[w.id] || 0) + 1; save(); renderCards(w.id);
+}
+function settle() {
+  const w = winner(); mode = 'done'; runners.forEach(r => (r.v = 0));
+  popConfetti(FIN_X + 5, w.lat * 0.5); play('pop');
+  music('macdonald', 112, false, t => CALLS[w.id](t, 0.6), () => { if (mode === 'done') music('mary', 96, true); });
+  goBtn.textContent = 'Race again!'; goBtn.disabled = false; goBtn.focus({ preventScroll: true });
+}
+
+/* ---- flow ---- */
+function reset() {
+  clearEventObjects(); runners.forEach(r => { if (r.obj) { disposeGroup(r.obj.root); scene.remove(r.obj.root); } });
+  const list = ANIMALS.filter(a => !S.out.includes(a.id)), lanes = shuffle(list.map((_, i) => i));
+  setupTrack(Math.max(list.length, 2));
+  runners = list.map((a, i) => makeRunner(a, lanes[i])); runners.forEach(r => { r.obj = buildRunnerObject(r); r.lat = laneZ(r.lane); r.obj.heart.visible = S.fav === r.id; });
+  world.ribbon.forEach(p => (p.rotation.y = 0)); world.tape = -1; if (confetti) confetti.visible = false;
+  mode = 'ready'; events = []; crossAt = -1; slowAt = -1; tsTarget = 1; ts = 1; leader = null; shake = 0;
+  bannerOv.hidden = true; hideCount(); feedOv.innerHTML = '';
+  goBtn.textContent = 'Start the race!'; goBtn.disabled = runners.length < 2;
+  setCommentary(runners.length < 2 ? 'Pick at least two animals to race.' : pick(['Everybody is lining up by the barn!', 'The animals are ready at the start!', 'Who will win this time?', 'The rooster is about to crow!']));
+  $('eyebrow').textContent = `Race ${S.races + 1}`;
+  $('headline').innerHTML = 'Who will win the <span class="who">Barnyard Race</span>?';
+  renderCards(); idleMusic();
+}
+function start() {
+  if (runners.length < 2 || mode !== 'ready') return; audio(); stopMusic(0.2);
+  const w = pick(runners); runners.forEach(r => (r.target = r === w));
+  plan(); planEvents(); spawnEventObjects();
+  S.races++; save(); $('eyebrow').textContent = `Race ${S.races}`;
+  introOrder = [...runners].sort((a, b) => a.lane - b.lane); mode = 'intro'; clock = 0; introLane = -1; goBtn.disabled = true; said = {};
+  setCommentary('Meet the racers!');
+}
+function go() { if (mode === 'ready') start(); else if (mode === 'done') { reset(); start(); } }
+
+/* ---- cards ---- */
+function renderCards(winnerId) {
+  const ul = $('cards'); ul.innerHTML = '';
+  ANIMALS.forEach(a => {
+    const out = S.out.includes(a.id), wins = S.wins[a.id] || 0;
+    const li = document.createElement('li'); li.className = 'card' + (out ? ' out' : '') + (S.fav === a.id ? ' fav' : '') + (winnerId === a.id ? ' winner' : ''); li.tabIndex = 0; li.setAttribute('role', 'button'); li.setAttribute('aria-pressed', String(!out)); li.title = out ? `Put ${a.name} back in the race` : `Take ${a.name} out of the race`;
+    li.innerHTML = `<button type="button" class="heart" aria-label="Cheer for ${a.name}" aria-pressed="${S.fav === a.id}">${S.fav === a.id ? '❤️' : '🤍'}</button><div class="face">${a.emoji}</div><div class="nm">${a.name}</div><div class="kd">${a.kind}</div><div class="rib">${wins > 6 ? '🏅×' + wins : '🏅'.repeat(wins)}</div>`;
+    li.addEventListener('click', () => toggleOut(a.id)); li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOut(a.id); } });
+    li.querySelector('.heart').addEventListener('click', e => { e.stopPropagation(); S.fav = S.fav === a.id ? null : a.id; save(); runners.forEach(r => (r.obj.heart.visible = S.fav === r.id)); renderCards(winnerId); if (S.fav) setMsg(`Go, ${a.name}, go!`); });
+    ul.appendChild(li);
+  });
+  $('countLabel').textContent = `${ANIMALS.length - S.out.length} racing`;
+}
+function setMsg(t) { $('msg').textContent = t; clearTimeout(setMsg.t); setMsg.t = setTimeout(() => ($('msg').textContent = ''), 3000); }
+function toggleOut(id) {
+  if (mode !== 'ready' && mode !== 'done') { setMsg('Wait for the race to finish!'); return; }
+  const out = S.out.includes(id);
+  if (!out && ANIMALS.length - S.out.length <= 2) { setMsg('We need at least two racers!'); return; }
+  S.out = out ? S.out.filter(x => x !== id) : S.out.concat(id); save(); reset();
+}
+
+/* ---- buttons ---- */
+goBtn.addEventListener('click', go);
+document.addEventListener('keydown', e => { if (e.code === 'Space' && !/^(INPUT|BUTTON|LI)$/.test(document.activeElement.tagName)) { e.preventDefault(); go(); } });
+$('clearWins').addEventListener('click', () => { S.wins = {}; save(); renderCards(); setMsg('Ribbons cleared.'); });
+$('soundBtn').addEventListener('click', () => { S.sound = !S.sound; save(); $('soundBtn').textContent = S.sound ? 'Sound on' : 'Sound off'; $('soundBtn').setAttribute('aria-pressed', S.sound); $('soundBtn').classList.toggle('armed', !S.sound); if (audio()) { master.gain.setTargetAtTime(S.sound ? 0.8 : 0, now(), 0.05); if (S.sound && !seq) idleMusic(); } });
+$('fullBtn').addEventListener('click', () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); });
+document.addEventListener('fullscreenchange', () => { $('fullBtn').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; W = 0; });
+document.addEventListener('pointerdown', () => { if (audio() && !seq) idleMusic(); }, { once: true });
+if (!S.sound) { $('soundBtn').textContent = 'Sound off'; $('soundBtn').classList.add('armed'); $('soundBtn').setAttribute('aria-pressed', 'false'); }
+
+/* ---- boot ---- */
+function layout() {
+  W = trackWrap.clientWidth || 800; H = clamp(Math.round(W * 9 / 16), 240, Math.max(260, Math.round(window.innerHeight * (document.fullscreenElement ? 0.78 : 0.72))));
+  renderer.setSize(W, H); camera.aspect = W / H; camera.updateProjectionMatrix();
+}
+let last = performance.now();
+function frame(t) { requestAnimationFrame(frame); const dt = Math.min(0.05, (t - last) / 1000); last = t; if (!W) layout(); update(dt); renderer.render(scene, camera); }
+function boot() {
+  let ok = THREE_OK;
+  if (ok) {
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+      renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.useLegacyLights = true; glHost.appendChild(renderer.domElement);
+    } catch (e) { ok = false; }
+  }
+  if (!ok) { glHost.innerHTML = '<p class="gl-fail">This browser can\'t draw the 3D farm. Try Safari or Chrome on a computer or iPad.</p>'; goBtn.disabled = true; return; }
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fd9ff); scene.fog = new THREE.Fog(0xbfe7ff, 90, 230);
+  camera = new THREE.PerspectiveCamera(50, 16 / 9, 0.1, 500);
+  scene.add(new THREE.HemisphereLight(0xcfe9ff, 0x6a9a4a, 0.75));
+  sun = new THREE.DirectionalLight(0xfff4dc, 1.0); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.camera.left = sun.shadow.camera.bottom = -36; sun.shadow.camera.right = sun.shadow.camera.top = 36; sun.shadow.camera.near = 1; sun.shadow.camera.far = 160; sun.shadow.bias = -0.0005; scene.add(sun); scene.add(sun.target);
+  buildTextures(); buildWorld(); makeConfetti();
+  window.addEventListener('resize', () => { W = 0; });
+  reset(); requestAnimationFrame(frame);
+  loadModels().then(() => { if (mode === 'ready') reset(); });
+}
+boot();
+</script>
+</body>
+</html>
