@@ -106,7 +106,7 @@ h1,h2,p{margin:0}
 <body>
 <div class="app">
   <header class="topbar">
-    <div class="brand"><div class="brand-name">Day on the Farm</div><div class="brand-sub">A little farm show</div></div>
+    <div class="brand"><div class="brand-name">Day on the Farm</div><div class="brand-sub">Help out on the farm</div></div>
     <div class="tools">
       <button type="button" class="btn" id="soundBtn" aria-pressed="true">Sound on</button>
       <button type="button" class="btn" id="voiceBtn" aria-pressed="true">Voice on</button>
@@ -120,10 +120,10 @@ h1,h2,p{margin:0}
     <div class="ov-drops" id="drops" aria-hidden="true"></div>
     <p class="caption" id="caption" aria-live="polite"></p>
     <div class="ov ov-fade" id="fadeOv"></div>
-    <div class="ov ov-start" id="startOv"><button type="button" class="primary" id="startBtn" disabled>Loading the farm…</button><p class="start-hint">Tap any animal to say hello!</p></div>
+    <div class="ov ov-start" id="startOv"><button type="button" class="primary" id="startBtn" disabled>Loading the farm…</button><p class="start-hint">Tap the animals with a yellow ring to help on the farm!</p></div>
   </div>
   <nav class="scenes" id="scenes" aria-label="Pick a show"></nav>
-  <p class="foot">Tap any animal and it says hello.</p>
+  <p class="foot">When an animal has a yellow ring, tap it to make the story go. Tap any animal and it says hello.</p>
 </div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script>
@@ -168,7 +168,7 @@ function audio() {
       master = AC.createGain(); master.gain.value = S.sound ? 0.8 : 0; master.connect(AC.destination);
       musicBus = AC.createGain(); musicBus.gain.value = 0.36; musicBus.connect(master);
       sfxBus = AC.createGain(); sfxBus.gain.value = 0.75; sfxBus.connect(master);
-      decodeSamples();
+      decodeSamples(); decodeVO();
       noiseBuf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
       const ch = noiseBuf.getChannelData(0); for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
     } catch (e) { AC = null; }
@@ -206,25 +206,47 @@ const SYNTH = {
   duck(t, k = 1) { [0, .24].forEach(o => { osc({ f: 520, to: 380, t: t + o, d: .17, v: .1, type: 'square', lp: 1500, a: .01, hold: 1, vib: { f: 30, depth: 20 } }); noise({ t: t + o, d: .15, v: .05, ft: 'lowpass', f: 1200 }); }); },
   horse(t, k = 1) { const d = .7 * k; osc({ f: 1150, to: 480, t, d, v: .09, type: 'sawtooth', lp: 3200, a: .02, hold: 1, vib: { f: 14, depth: 60 } }); osc({ f: 575, to: 240, t, d, v: .04, type: 'square', lp: 1600, a: .02, hold: 1, vib: { f: 14, depth: 30 } }); noise({ t: t + d, d: .15, v: .08, ft: 'lowpass', f: 500 }); },
 };
-const SAMPLE_FILES = { pig: '../barnyard-race/sounds/pig-oink.mp3', cow: '../barnyard-race/sounds/cow-moo.mp3', sheep: '../barnyard-race/sounds/sheep-baa.mp3', chicken: '../barnyard-race/sounds/chicken-cluck.mp3' };
-const SAMPLE_VOL = { pig: 1.1, cow: 0.9, sheep: 0.9, chicken: 0.8 };
+const SAMPLE_FILES = {
+  pig: ['../barnyard-race/sounds/pig-oink.mp3', '../barnyard-race/sounds/pig-2.mp3', '../barnyard-race/sounds/pig-3.mp3', '../barnyard-race/sounds/pig-4.mp3'],
+  cow: ['../barnyard-race/sounds/cow-moo.mp3', '../barnyard-race/sounds/cow-2.mp3', '../barnyard-race/sounds/cow-3.mp3', '../barnyard-race/sounds/cow-4.mp3'],
+  sheep: ['../barnyard-race/sounds/sheep-baa.mp3', '../barnyard-race/sounds/sheep-2.mp3', '../barnyard-race/sounds/sheep-3.mp3'],
+  lamb: ['../barnyard-race/sounds/lamb-1.mp3', '../barnyard-race/sounds/lamb-2.mp3'],
+  chicken: ['../barnyard-race/sounds/chicken-cluck.mp3', '../barnyard-race/sounds/chicken-2.mp3'],
+  rooster: ['../barnyard-race/sounds/rooster-1.mp3'],
+  horse: ['../barnyard-race/sounds/horse-1.mp3', '../barnyard-race/sounds/horse-2.mp3', '../barnyard-race/sounds/horse-3.mp3'],
+  goat: ['../barnyard-race/sounds/goat-1.mp3', '../barnyard-race/sounds/goat-2.mp3', '../barnyard-race/sounds/kid-1.mp3'],
+  duck: ['../barnyard-race/sounds/duck-1.mp3', '../barnyard-race/sounds/duck-2.mp3', '../barnyard-race/sounds/duck-3.mp3', '../barnyard-race/sounds/duck-4.mp3'],
+  frog: ['../barnyard-race/sounds/frog-1.mp3', '../barnyard-race/sounds/frog-2.mp3', '../barnyard-race/sounds/frog-3.mp3', '../barnyard-race/sounds/frog-4.mp3'],
+};
+const SAMPLE_VOL = { pig: 1.1, cow: 0.9, sheep: 0.9, chicken: 0.8, rooster: 0.8 };
+const FALLBACK = { lamb: 'sheep' };
+// In the single-file copy every path is a data: URI. Decode those by hand: fetch() of data: URIs fails in some browsers when the page is opened from disk.
+function bytes(url) {
+  if (url.startsWith('data:')) { const s = atob(url.slice(url.indexOf(',') + 1)), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return Promise.resolve(u.buffer); }
+  return fetch(url).then(r => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
+}
+const decode = buf => (buf ? new Promise((ok, no) => AC.decodeAudioData(buf.slice(0), ok, no)).catch(() => null) : null);
 const sampleData = {}, samples = {};
-// Fetch the files right away; decoding waits for the AudioContext, which needs a tap first.
-for (const [id, url] of Object.entries(SAMPLE_FILES)) sampleData[id] = fetch(url).then(r => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
+// Read the files right away; decoding waits for the AudioContext, which needs a tap first.
+for (const [id, urls] of Object.entries(SAMPLE_FILES)) sampleData[id] = urls.map(bytes);
 function decodeSamples() {
   for (const id of Object.keys(SAMPLE_FILES)) {
-    if (samples[id] !== undefined) continue; samples[id] = null;
-    sampleData[id].then(buf => buf && new Promise((ok, no) => AC.decodeAudioData(buf.slice(0), ok, no))).then(b => { if (b) samples[id] = b; }).catch(() => {});
+    if (samples[id]) continue; samples[id] = [];
+    sampleData[id].forEach(p => p.then(decode).then(b => b && samples[id].push(b)));
   }
 }
 // k < 1 is a short call (in songs): play the start and fade it out early.
 function playSample(id, t, k = 1, p = 1) {
-  const b = samples[id], src = AC.createBufferSource(), g = AC.createGain(), d = Math.min(b.duration, b.duration * Math.max(0.45, k) + 0.05), v = SAMPLE_VOL[id] || 1;
+  const b = pick(samples[id]), src = AC.createBufferSource(), g = AC.createGain(), d = Math.min(b.duration, b.duration * Math.max(0.45, k) + 0.05), v = SAMPLE_VOL[id] || 1;
   src.buffer = b; src.playbackRate.value = rnd(0.96, 1.05) * p;
   g.gain.setValueAtTime(v, t); g.gain.setValueAtTime(v, t + Math.max(0, d - 0.08)); g.gain.linearRampToValueAtTime(0.0001, t + d);
   src.connect(g).connect(sfxBus); src.start(t); src.stop(t + d + 0.02);
 }
-const CALLS = Object.fromEntries(Object.keys(SYNTH).map(id => [id, (t, k, p = 1) => { if (samples[id]) return playSample(id, t, k, p); PM = p; try { SYNTH[id](t, k); } finally { PM = 1; } }]));
+const CALLS = Object.fromEntries([...new Set([...Object.keys(SYNTH), ...Object.keys(SAMPLE_FILES)])].map(id => [id, (t, k, p = 1) => {
+  if (samples[id] && samples[id].length) return playSample(id, t, k, p);
+  if (id === 'rooster') return SFX.rooster(t);
+  PM = p; try { SYNTH[FALLBACK[id] || id](t, k); } finally { PM = 1; }
+}]));
 const SFX = {
   rooster(t) { let tt = t; for (const [f, d] of [[659, .14], [784, .14], [880, .24], [784, .8]]) { osc({ f, to: d > .5 ? f * .72 : f * 1.02, t: tt, d, v: .12, type: 'sawtooth', lp: 2800, a: .02, hold: 1, vib: d > .5 ? { f: 9, depth: 25 } : null }); tt += d; } },
   bell(t) { osc({ f: 880, t, d: .35, v: .12, type: 'square', lp: 3000, a: .002 }); osc({ f: 1319, t, d: .25, v: .05, type: 'square', a: .002 }); noise({ t, d: .03, v: .1, f: 4000 }); },
@@ -674,7 +696,7 @@ function makeActor(id, o = {}) {
   const root = grp(0, 0, 0, scene), g = grp(0, 0, 0, root), bodyG = grp(0, 0, 0, g);
   g.scale.setScalar(o.scale || 1);
   const parts = loaded[id] ? buildModel(id, bodyG) : BUILD[id](bodyG);
-  const a = { id, name: o.name || '', baby: !!o.baby, scale: o.scale || 1, voice: o.voice || id, pitch: o.baby ? 1.45 : 1, root, g, bodyG, parts, heading: 0, face: null, v: 0, speed: 2.6, gait: rnd(0, TAU), seed: Math.random(), target: null, leap: null, lift: 0, lean: 0, munch: false, hosing: false, waving: false, intoBarn: false, hopT0: -9, rollT0: -9, shakeT0: -9, pourT0: -9, flapT0: -9, happyT0: -9, lastTap: -9, mats: null };
+  const a = { id, name: o.name || '', baby: !!o.baby, scale: o.scale || 1, voice: o.voice || id, pitch: o.pitch || (o.baby ? 1.35 : 1), root, g, bodyG, parts, heading: 0, face: null, v: 0, speed: 2.6, gait: rnd(0, TAU), seed: Math.random(), target: null, leap: null, lift: 0, lean: 0, munch: false, hosing: false, waving: false, intoBarn: false, hopT0: -9, rollT0: -9, shakeT0: -9, pourT0: -9, flapT0: -9, happyT0: -9, lastTap: -9, mats: null };
   root.traverse(m => (m.userData.actor = a)); root.visible = false; actors.push(a); return a;
 }
 // Mud needs its own materials so only the piggies get muddy.
@@ -689,11 +711,11 @@ function buildCast() {
   for (const an of ANIMALS) cast[an.id] = makeActor(an.id, { name: an.name });
   cast.flock = [0, 1, 2, 3].map(() => makeActor('sheep', { name: 'Sheep' }));
   cast.piglets = [0, 1].map(() => makeActor('pig', { scale: 0.5, baby: true, name: 'Piglet' }));
-  cast.calf = makeActor('cow', { scale: 0.55, baby: true, name: 'Calf' });
-  cast.lamb = makeActor('sheep', { scale: 0.55, baby: true, name: 'Lamb' });
-  cast.chick = makeActor('chick', { scale: 0.6, baby: true, voice: 'chicken', name: 'Chick' }); cast.chick.pitch = 1.8;
-  cast.duckling = makeActor('duck', { scale: 0.5, baby: true, name: 'Duckling' });
-  cast.froglet = makeActor('frog', { scale: 0.55, baby: true, name: 'Froglet' });
+  cast.calf = makeActor('cow', { scale: 0.55, baby: true, name: 'Calf', pitch: 1.3 });
+  cast.lamb = makeActor('sheep', { scale: 0.55, baby: true, voice: 'lamb', pitch: 1.05, name: 'Lamb' });
+  cast.chick = makeActor('chick', { scale: 0.6, baby: true, voice: 'chicken', pitch: 1.7, name: 'Chick' });
+  cast.duckling = makeActor('duck', { scale: 0.5, baby: true, pitch: 1.45, name: 'Duckling' });
+  cast.froglet = makeActor('frog', { scale: 0.55, baby: true, pitch: 1.45, name: 'Froglet' });
   [cast.pig, ...cast.piglets].forEach(ownMaterials);
 }
 
@@ -728,7 +750,7 @@ function stepFloats(dt) {
 function hearts(a, n = 1) { for (let i = 0; i < n; i++) floatUp(TEX.heart, headPos(a).add(V(rnd(-0.4, 0.4), 0.5 + i * 0.25, rnd(-0.3, 0.3))), 0.55, 0.55, 1.8, 1.2); }
 function call(a, k) {
   if (a.id === 'farmer') return;
-  play(a.voice, k ?? (a.baby ? 0.6 : 1), a.pitch); if (a.parts.wings.length) a.flapT0 = time;
+  play(a.voice, k ?? 1, a.pitch); if (a.parts.wings.length) a.flapT0 = time;
   const s = a.baby ? 0.7 : 1; floatUp(wordTex(WORDS[a.id]), headPos(a).add(V(0, 0.9 * s, 0)), 1.9 * s, 0.95 * s, 1.4, 0.8);
 }
 function greet(a, n = 1, k) { a.hopT0 = time; a.happyT0 = time; call(a, k); hearts(a, n); }
@@ -754,6 +776,7 @@ function stepActor(a, dt) {
   a.bodyG.rotation.x = (rollK < 1 ? Math.sin(Math.PI * rollK) * 1.45 : 0) + (shK >= 0 && shK < 1.4 ? Math.sin(shK * 40) * 0.32 * (1 - shK / 1.4) : 0);
   a.bodyG.rotation.z = (amp > 0 ? Math.sin(a.gait) * 0.05 * amp : 0) + a.lean - (o.mixer ? munchN * 0.12 : 0);
   if (!o.farmer) { o.headG.rotation.y = amp > 0.1 || a.munch ? 0 : Math.sin(time * 0.7 + a.seed * 9) * 0.3; o.headG.rotation.z = amp > 0 ? Math.sin(a.gait) * 0.08 * amp : -munchN * 0.55 + Math.sin(time * 1.5 + a.seed * 7) * 0.04; }
+  if (a.sleep) { a.bodyG.rotation.z -= 0.14; a.bodyG.position.y -= 0.05; if (!o.farmer) o.headG.rotation.z = -0.5 + Math.sin(time * 1.3 + a.seed * 5) * 0.06; }
   for (const Lg of o.legs) { const ph = a.gait * (o.bird ? 1.5 : 1) + Lg.off, sn = Math.sin(ph), cs = Math.cos(ph); Lg.hip.rotation.z = (Lg.front ? 0.1 : -0.06) + 0.6 * amp * sn; Lg.knee.rotation.z = (Lg.front ? -1 : 1) * amp * (0.15 + 0.55 * Math.max(0, -cs)); }
   const flap = time - a.flapT0 < 1 || hopK < 1;
   for (const wg of o.wings) wg.piv.rotation.x = wg.s * (flap ? 0.3 + Math.abs(Math.sin(real * 26)) * 1.1 : 0.12 + amp * Math.sin(a.gait * 2) * 0.2);
@@ -790,22 +813,139 @@ const dropsEl = $('drops');
 for (let i = 0; i < 14; i++) { const d = document.createElement('span'), s = rnd(18, 64); d.style.cssText = `left:${rnd(2, 92)}%;top:${rnd(4, 80)}%;width:${s}px;height:${s * rnd(1, 1.25)}px`; dropsEl.appendChild(d); }
 function screenSplash() { if (reduced) return; dropsEl.classList.remove('show'); void dropsEl.offsetWidth; dropsEl.classList.add('show'); }
 
-/* ---- words on screen, and a narrator voice ---- */
+/* ---- words on screen, and the narrator: recorded lines in vo/, one file per line ---- */
 const capEl = $('caption'), bannerOv = $('bannerOv'), bannerTxt = $('bannerTxt'), countOv = $('countOv'), countTxt = $('countTxt'), fadeOv = $('fadeOv'), startOv = $('startOv'), startBtn = $('startBtn');
-let VOICE = null;
-function pickVoice() { try { const vs = speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang)); VOICE = vs.find(v => /Samantha|Karen|Moira|Tessa|Google US English|Aria|Jenny/i.test(v.name)) || vs.find(v => /en[-_]US/i.test(v.lang)) || vs[0] || null; } catch (e) {} }
-const canSpeak = 'speechSynthesis' in window;
-if (canSpeak) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-function musicLevel(v) { if (AC && musicBus) musicBus.gain.setTargetAtTime(v, AC.currentTime, 0.15); }
-function say(text, spoken = text) {
-  capEl.textContent = text; capEl.classList.remove('pop'); void capEl.offsetWidth; capEl.classList.add('pop');
-  if (!canSpeak || !S.sound || !S.voice) return;
-  try {
-    speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(spoken); u.rate = 0.88; u.pitch = 1.15; u.volume = 1; if (VOICE) u.voice = VOICE;
-    u.onstart = () => musicLevel(MUSIC_VOL * 0.4); u.onend = u.onerror = () => musicLevel(MUSIC_VOL); speechSynthesis.speak(u);
-  } catch (e) {}
+const VO_FILES = {
+  /* VO-BEGIN */
+  "Good morning, Wilbur!": 'vo/b09c0e2f59.mp3',
+  "Good morning, Daisy!": 'vo/089f35adad.mp3',
+  "Good morning, Woolly!": 'vo/19c4cf0e6b.mp3',
+  "Good morning, Henrietta!": 'vo/afec1c381a.mp3',
+  "Good morning, Buttercup!": 'vo/fd942da7f5.mp3',
+  "Good morning, Billy!": 'vo/4e595a1daf.mp3',
+  "Good morning, Puddles!": 'vo/5a6902a85f.mp3',
+  "Good morning, Hoppy!": 'vo/a5e1b8495d.mp3',
+  "Cock-a-doodle-doo! Good morning, farm!": 'vo/9def4ce11f.mp3',
+  "Shh. The animals are still sleeping.": 'vo/d1c4ce2d2f.mp3',
+  "Tap an animal to wake it up!": 'vo/3814b08a37.mp3',
+  "Who else is sleeping?": 'vo/bbe54dec75.mp3',
+  "Wake up another one!": 'vo/584f752dba.mp3',
+  "Tap a sleepy animal!": 'vo/c3487421da.mp3',
+  "Everybody is awake! Good morning, everybody!": 'vo/7c8f9d72fb.mp3',
+  "Yum yum! Oink oink!": 'vo/112012f767.mp3',
+  "Yum yum! Moo!": 'vo/8b8fb1617c.mp3',
+  "Yum yum! Baa!": 'vo/f9321e7544.mp3',
+  "Yum yum! Bawk bawk!": 'vo/8f5709086c.mp3',
+  "Crunch crunch! Neigh!": 'vo/7896926da4.mp3',
+  "Yum yum! Meh-eh-eh!": 'vo/2ac28042eb.mp3',
+  "Yum yum! Quack quack!": 'vo/bc513fffbe.mp3',
+  "Got it! Ribbit!": 'vo/68154c86ca.mp3',
+  "Hoppy wants a bug! Bzzz!": 'vo/81f0410eb4.mp3',
+  "Feeding time! Who's hungry?": 'vo/c12e6228f2.mp3',
+  "Tap a hungry animal to feed it!": 'vo/61825901b9.mp3',
+  "Who is still hungry?": 'vo/c350ea89b8.mp3',
+  "Feed another one!": 'vo/18cbcb6480.mp3',
+  "Tap a hungry tummy!": 'vo/eed6ba2ca7.mp3',
+  "Everybody is full. Thank you!": 'vo/af18683674.mp3',
+  "Wilbur and the piglets found a big mud puddle!": 'vo/8781756170.mp3',
+  "Tap a piggy to jump in the mud!": 'vo/ba719850f2.mp3',
+  "Tap the next piggy!": 'vo/d0178a989a.mp3',
+  "Splish!": 'vo/35c75a1487.mp3',
+  "Splash!": 'vo/15b3c68160.mp3',
+  "Sploosh!": 'vo/58549ce259.mp3',
+  "Muddy, muddy piggies!": 'vo/c192628cca.mp3',
+  "Uh oh! Bath time, piggies!": 'vo/2bd00cf30f.mp3',
+  "Tap a muddy piggy to wash it!": 'vo/25d99f7eb4.mp3',
+  "Splash! Tap again!": 'vo/73fe78ace1.mp3',
+  "Scrub-a-dub-dub!": 'vo/74f05a07c9.mp3',
+  "More bubbles!": 'vo/8372a9462d.mp3',
+  "Squeaky clean piggies!": 'vo/97b1e8f2f2.mp3',
+  "Time to bring the sheep home!": 'vo/927b4c97b8.mp3',
+  "Tap a sheep to send it home!": 'vo/0140a0c31f.mp3',
+  "Tap another sheep!": 'vo/2f2900d1b5.mp3',
+  "Who is next?": 'vo/afed67be85.mp3',
+  "Baa! Tap a sheep!": 'vo/962971d028.mp3',
+  "Oh! Billy the goat wants to come too!": 'vo/bcd9036771.mp3',
+  "Tap Billy!": 'vo/7408d9f778.mp3',
+  "Everybody is home! Hooray!": 'vo/4b63fca242.mp3',
+  "Two little piglets are lost!": 'vo/7793a1f7dd.mp3',
+  "Here I am, says Wilbur!": 'vo/a89bd08455.mp3',
+  "Wilbur found the piglets! Hooray!": 'vo/7b56ac80ce.mp3',
+  "The little duckling is lost!": 'vo/54a801d057.mp3',
+  "Here I am, says Puddles!": 'vo/6f734a00c6.mp3',
+  "Puddles found the duckling! Quack quack!": 'vo/60cf38c0de.mp3',
+  "The little calf is lost!": 'vo/0b92640138.mp3',
+  "Here I am, says Daisy!": 'vo/9f21bb836b.mp3',
+  "Daisy found the calf! Moo!": 'vo/e259a8535d.mp3',
+  "The little froglet is lost!": 'vo/07817377dc.mp3',
+  "Here I am, says Hoppy!": 'vo/e1c7afaf31.mp3',
+  "Hoppy found the froglet! Ribbit!": 'vo/d1bebdc10f.mp3',
+  "The little lamb is lost!": 'vo/5e5019881f.mp3',
+  "Here I am, says Woolly!": 'vo/26cf2f37ff.mp3',
+  "Woolly found the lamb! Baa!": 'vo/8b79ca4b0f.mp3',
+  "The little chick is lost!": 'vo/ac4b76a0e1.mp3',
+  "Here I am, says Henrietta!": 'vo/4b47f9dfbb.mp3',
+  "Henrietta found the chick! Peep peep!": 'vo/6e82afdfe8.mp3',
+  "Some babies got lost on the farm!": 'vo/088dab45ef.mp3',
+  "Tap the baby to call Mama!": 'vo/9309feb8e5.mp3',
+  "Tap Mama!": 'vo/17cab17e52.mp3',
+  "Everybody found their mama!": 'vo/8bdfe44b0b.mp3',
+  "Night night, Buttercup!": 'vo/df2f273130.mp3',
+  "Night night, Daisy and the calf!": 'vo/fa1fca3335.mp3',
+  "Night night, Billy!": 'vo/baf578d3d6.mp3',
+  "Night night, sheep!": 'vo/1ecb6f64bf.mp3',
+  "Night night, Wilbur and the piglets!": 'vo/73a1d7d315.mp3',
+  "Night night, Henrietta and the chick!": 'vo/b4c977ad47.mp3',
+  "The sun is going down. Time for bed, animals!": 'vo/348b2cea5b.mp3',
+  "Tap an animal to tuck it into bed!": 'vo/49f92b2b6e.mp3',
+  "Who else is sleepy?": 'vo/b8247b1ecc.mp3',
+  "Tap the next sleepy animal!": 'vo/4bb64a44aa.mp3',
+  "Who goes to bed next?": 'vo/5aca54c144.mp3',
+  "The ducks and frogs sleep by the pond.": 'vo/f486c41c34.mp3',
+  "Tap the ducks!": 'vo/bfe7616abb.mp3',
+  "Float, float on the pond. Quack!": 'vo/c4372b9421.mp3',
+  "Tap the frogs!": 'vo/4059d31a91.mp3',
+  "Hop onto a lily pad! Ribbit!": 'vo/23c02e8c99.mp3',
+  "Tap the barn to turn off the light!": 'vo/85a47ed9d9.mp3',
+  "Good night, farm!": 'vo/c51a485f58.mp3',
+  "Good night, Violet!": 'vo/087d6e06fa.mp3',
+  "Good morning!": 'vo/33e8886999.mp3',
+  "Feeding Time": 'vo/00bc20f41e.mp3',
+  "Muddy Pig Bath": 'vo/4d331b0f35.mp3',
+  "Mama and Baby": 'vo/daf317a692.mp3',
+  "The end! Tap an animal, or pick another game.": 'vo/ae0e304e69.mp3',
+  "One!": 'vo/27141a590f.mp3',
+  "Two!": 'vo/4a908e1cd3.mp3',
+  "Three!": 'vo/0c111972e9.mp3',
+  "Four!": 'vo/bed03137a7.mp3',
+  "Five!": 'vo/b495566271.mp3',
+  "Six!": 'vo/b8df22469c.mp3',
+  "Seven!": 'vo/9b81dc9d9e.mp3',
+  "Round-Up": 'vo/46dd651111.mp3',
+  "Bedtime": 'vo/e3cb8bd6bf.mp3',
+  /* VO-END */
+};
+const voData = {}, voBufs = {};
+for (const [line, url] of Object.entries(VO_FILES)) voData[line] = bytes(url);
+let voBus = null, voSrc = null;
+function decodeVO() {
+  voBus = AC.createGain(); voBus.gain.value = 1; voBus.connect(master);
+  for (const [line, p] of Object.entries(voData)) p.then(decode).then(b => { if (b) voBufs[line] = b; });
 }
-function hush() { if (canSpeak) try { speechSynthesis.cancel(); } catch (e) {} }
+function musicLevel(v) { if (AC && musicBus) musicBus.gain.setTargetAtTime(v, AC.currentTime, 0.15); }
+// Shows the words and plays the recorded line. Returns how long the line lasts, so scenes can wait for it.
+function say(text) {
+  capEl.textContent = text; capEl.classList.remove('pop'); void capEl.offsetWidth; capEl.classList.add('pop');
+  const b = voBufs[text];
+  if (!(text in VO_FILES)) console.warn('No narration recorded for:', text);
+  if (!b) return Math.max(1.2, text.split(' ').length * 0.4);
+  if (!AC || !S.sound || !S.voice) return b.duration;
+  hush(); const src = AC.createBufferSource(); src.buffer = b; src.connect(voBus); src.start(); voSrc = src;
+  musicLevel(MUSIC_VOL * 0.35); src.onended = () => { if (voSrc === src) { voSrc = null; musicLevel(MUSIC_VOL); } };
+  return b.duration;
+}
+function hush() { if (voSrc) { try { voSrc.stop(); } catch (e) {} voSrc = null; } }
+const talk = (text, pad = 0.35) => wait(say(text) + pad);
 function count(n) { countTxt.textContent = n; countOv.hidden = false; countTxt.classList.remove('pop'); void countTxt.offsetWidth; countTxt.classList.add('pop'); say(NUM[n]); clearTimeout(count.t); count.t = setTimeout(() => (countOv.hidden = true), 1300); }
 
 /* ---- camera: slow, gentle moves ---- */
@@ -819,29 +959,86 @@ function stepCamera(dt) {
 }
 function framePair(a, b, rate = 0.9) { const p = posOf(a), q = posOf(b), mx = (p.x + q.x) / 2, mz = (p.z + q.z) / 2, d = Math.hypot(p.x - q.x, p.z - q.z); shot(mx, 2.6 + d * 0.32, mz + 5.5 + d * 0.7, mx, 0.7, mz, rate); }
 
+/* ---- Violet's turn: the story waits until she taps one of the glowing animals ---- */
+// A yellow ring pulses under every animal she can tap; after a few quiet seconds an arrow bounces over one.
+// Nobody taps for a while? The narrator asks again, and later the story carries on by itself.
+let turn = null, arrow = null;
+const rings = [];
+function yourTurn(targets, prompt, auto = 16) {
+  return new Promise(r => { if (prompt) say(prompt); turn = { targets, r, g: gen, t0: time, prompt, nudged: false, auto }; });
+}
+function endTurn(t) { const T = turn; turn = null; play('blip'); T.r(t); }
+const spotPos = t => (t.spot ? t.p : posOf(t));
+const ringSize = t => (t.spot ? t.size : (t.id === 'cow' || t.id === 'horse' ? 1.9 : 1.25) * t.scale);
+function stepTurn() {
+  if (turn && turn.g !== gen) turn = null;
+  const ts = turn ? turn.targets : [];
+  while (rings.length < ts.length) { const m = new THREE.Mesh(new THREE.RingGeometry(0.78, 1, 36), new THREE.MeshBasicMaterial({ color: 0xffe14d, transparent: true, depthWrite: false, fog: false })); m.rotation.x = -Math.PI / 2; m.renderOrder = 3; scene.add(m); rings.push(m); }
+  rings.forEach((m, i) => {
+    const t = ts[i]; m.visible = !!t && (t.spot || t.root.visible); if (!m.visible) return;
+    const p = spotPos(t), pulse = Math.sin(real * 5 + i);
+    m.position.set(p.x, 0.08, t.spot ? p.z + 1.5 : p.z); m.scale.setScalar(ringSize(t) * (1 + 0.12 * pulse)); m.material.opacity = 0.6 + 0.3 * pulse;
+  });
+  if (!arrow) {
+    arrow = spriteOf(canvasTex(128, 160, c => { c.lineJoin = 'round'; c.lineWidth = 12; c.strokeStyle = '#7a4b00'; c.fillStyle = '#ffd23f'; c.beginPath(); c.moveTo(40, 12); c.lineTo(88, 12); c.lineTo(88, 82); c.lineTo(118, 82); c.lineTo(64, 148); c.lineTo(10, 82); c.lineTo(40, 82); c.closePath(); c.stroke(); c.fill(); }), 1, { depthTest: false, fog: false });
+    arrow.renderOrder = 6; scene.add(arrow);
+  }
+  const t0 = ts.find(t => t.spot || t.root.visible), idle = turn && t0 && time - turn.t0 > 3;
+  arrow.visible = !!idle;
+  if (idle) {
+    const p = t0.spot ? t0.p : headPos(t0), d = camera.position.distanceTo(p);
+    arrow.position.set(p.x, p.y + 0.9 + d * 0.035 + Math.abs(Math.sin(real * 4)) * d * 0.03, p.z); arrow.scale.set(d * 0.055, d * 0.069, 1);
+  }
+  if (!turn) return;
+  if (!turn.nudged && time - turn.t0 > 9 && turn.prompt) { turn.nudged = true; say(turn.prompt); }
+  if (time - turn.t0 > turn.auto) endTurn(t0 || ts[0]);
+}
+let zTex = null;
+function zzz(x, y, z, s = 0.8) {
+  zTex = zTex || canvasTex(128, 128, c => { c.font = '900 84px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 10; c.strokeStyle = '#1d2552'; c.strokeText('z', 64, 70); c.fillStyle = '#fff'; c.fillText('z', 64, 70); });
+  floatUp(zTex, V(x + rnd(-0.3, 0.3), y, z), s, s, 2.4, 0.7);
+}
+
 /* ---- the scenes ---- */
 function resetStage() {
-  for (const a of actors) { a.root.visible = false; a.target = a.leap = null; a.munch = a.hosing = a.waving = a.intoBarn = false; a.lean = 0; a.lift = 0; a.v = 0; a.face = null; }
+  for (const a of actors) { a.root.visible = false; a.target = a.leap = null; a.munch = a.hosing = a.waving = a.intoBarn = a.sleep = false; a.lean = 0; a.lift = 0; a.v = 0; a.face = null; }
   [cast.pig, ...cast.piglets].forEach(a => setMud(a, 0));
   for (const f of world.foods || []) scene.remove(f); world.foods = [];
   const F = cast.farmer.parts.farmer; F.bucket.visible = false; F.hose.visible = false;
-  world.troughs.visible = true; setSky(0); setGlow(0); countOv.hidden = true; bannerOv.hidden = true; capEl.textContent = ''; cam.follow = null;
+  world.troughs.visible = true; setSky(0); setGlow(0); countOv.hidden = true; bannerOv.hidden = true; capEl.textContent = ''; cam.follow = null; turn = null; hush();
 }
 const YARD = ['horse', 'cow', 'goat', 'sheep', 'pig', 'chicken', 'duck', 'frog'];
+const GOOD_MORNING = { pig: 'Good morning, Wilbur!', cow: 'Good morning, Daisy!', sheep: 'Good morning, Woolly!', chicken: 'Good morning, Henrietta!', horse: 'Good morning, Buttercup!', goat: 'Good morning, Billy!', duck: 'Good morning, Puddles!', frog: 'Good morning, Hoppy!' };
 function setupMorning() {
   setSky(0.55);
-  YARD.forEach((id, i) => place(cast[id], -15 + i * 3.2, 1.5 + (i % 2) * 1.6 + Math.sin(i) * 0.5));
-  shot(-4, 4.6, 15, -4, 1.2, 1);
+  YARD.forEach((id, i) => { place(cast[id], -15 + i * 3.2, 1.5 + (i % 2) * 1.6 + Math.sin(i) * 0.5); cast[id].sleep = true; });
+  shot(-4, 5.4, 18, -4, 1.2, 1);
 }
 async function sceneMorning() {
   tween(4, k => setSky(0.55 * (1 - k)));
-  play('rooster'); say('Cock-a-doodle-doo! Good morning, farm!'); await wait(4.2);
-  for (const id of ['pig', 'duck', 'frog']) { const a = cast[id]; framePair(a, a, 1.1); say(`Good morning, ${a.name}!`); await wait(1.1); greet(a, 2); await wait(2.2); }
-  shot(-4, 4.6, 15, -4, 1.2, 1); say('Good morning, everybody!');
-  YARD.forEach((id, i) => setTimeout(() => cast[id].root.visible && greet(cast[id]), 300 + i * 260)); await wait(4);
+  every(1.4, 600, () => { for (const id of YARD) { const a = cast[id]; if (a.sleep) { const p = headPos(a); zzz(p.x, p.y + 0.5, p.z, 0.6); } } });
+  play('rooster'); await talk('Cock-a-doodle-doo! Good morning, farm!');
+  await talk('Shh. The animals are still sleeping.');
+  let sleepy = YARD.map(id => cast[id]), first = true;
+  while (sleepy.length) {
+    const a = await yourTurn(sleepy, first ? 'Tap an animal to wake it up!' : pick(['Who else is sleeping?', 'Wake up another one!', 'Tap a sleepy animal!']));
+    first = false; sleepy = sleepy.filter(b => b !== a);
+    a.sleep = false; greet(a, 2); say(GOOD_MORNING[a.id]); await wait(1.4);
+  }
+  await talk('Everybody is awake! Good morning, everybody!', 0);
+  YARD.forEach((id, i) => setTimeout(() => cast[id].root.visible && greet(cast[id]), 300 + i * 260)); await wait(3.5);
 }
 
 const FEED = [['pig', 'slop'], ['cow', 'hay'], ['sheep', 'hay'], ['chicken', 'corn'], ['horse', 'carrot'], ['goat', 'apple'], ['duck', 'corn'], ['frog', 'fly']];
+const FOOD_ICON = { slop: '🥣', hay: '🌾', corn: '🌽', carrot: '🥕', apple: '🍎', fly: '🐛' };
+const YUM = { pig: 'Yum yum! Oink oink!', cow: 'Yum yum! Moo!', sheep: 'Yum yum! Baa!', chicken: 'Yum yum! Bawk bawk!', horse: 'Crunch crunch! Neigh!', goat: 'Yum yum! Meh-eh-eh!', duck: 'Yum yum! Quack quack!', frog: 'Got it! Ribbit!' };
+const iconTex = {};
+function thought(a, food) {
+  const tex = iconTex[food] || (iconTex[food] = canvasTex(128, 128, (c, w) => { c.fillStyle = '#fff'; c.beginPath(); c.arc(64, 58, 52, 0, TAU); c.fill(); c.beginPath(); c.arc(40, 118, 8, 0, TAU); c.fill(); c.font = '64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(FOOD_ICON[food], 64, 62); }));
+  const sp = spriteOf(tex, 1, { depthTest: false }); sp.renderOrder = 5; scene.add(sp); world.foods.push(sp);
+  tick(() => { if (!sp.parent) return false; const p = headPos(a), s = 1.1 + 0.08 * Math.sin(real * 3 + a.seed * 9); sp.position.set(p.x + 0.3, p.y + 1.25 + Math.sin(real * 2 + a.seed * 7) * 0.1, p.z); sp.scale.set(s, s, 1); });
+  return sp;
+}
 function setupFeed() {
   FEED.forEach(([id], i) => place(cast[id], SLOT_X(i), FEED_Z));
   place(cast.farmer, SLOT_X(0) - 4, TROUGH_Z + 1.8, 0); cast.farmer.parts.farmer.bucket.visible = true;
@@ -862,34 +1059,39 @@ async function frogSnack(frog, x) {
   const wings = [-1, 1].map(s => { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.09), wingM); w.position.set(0, 0.06, s * 0.08); fly.add(w); return w; });
   let caught = false; play('buzz');
   tick(() => { if (caught) return false; fly.position.set(x + Math.sin(time * 2.6) * 0.9, 1.3 + Math.sin(time * 7) * 0.18, TROUGH_Z - 0.6 + Math.cos(time * 2.1) * 0.5); wings.forEach((w, i) => (w.rotation.x = Math.sin(real * 60 + i * 3) * 0.8)); });
-  say('Hoppy is hungry for a bug! Bzzz!'); frog.face = FACE_CAM; await walkTo(frog, x, TROUGH_Z - 1.6, 1.5); await wait(2.4);
+  say('Hoppy wants a bug! Bzzz!'); frog.face = FACE_CAM; await walkTo(frog, x, TROUGH_Z - 1.6, 1.5); await wait(1.4);
   // zap! the tongue reaches the fly and brings it back
   caught = true; const from = headPos(frog).add(V(0, -0.05, 0.15)), to = fly.position.clone(), dir = to.clone().sub(from), len = dir.length();
   const tg = new THREE.CylinderGeometry(0.035, 0.05, 1, 6); tg.translate(0, 0.5, 0); const tongue = new THREE.Mesh(tg, mat(0xff6f91)); tongue.position.copy(from); tongue.quaternion.setFromUnitVectors(V(0, 1, 0), dir.normalize()); scene.add(tongue); world.foods.push(tongue);
   play('boing'); await tween(0.5, k => { const e = Math.sin(Math.PI * k); tongue.scale.set(1, Math.max(0.01, e * len), 1); if (k > 0.5) fly.position.lerpVectors(from, to, e); });
   scene.remove(tongue); scene.remove(fly); play('munch');
 }
+async function feedOne(a, food, x) {
+  if (food === 'fly') await frogSnack(a, x);
+  else {
+    // the food drops into the trough with a bump, then the animal trots up and eats it
+    const g = makeFood(food, x, TROUGH_Z); g.scale.setScalar(0.01);
+    await tween(0.35, k => { g.position.y = 0.62 + (1 - k) * 3; g.scale.setScalar(Math.max(0.01, k)); });
+    play(food === 'corn' ? 'flutter' : 'thud'); burst(V(x, 0.9, TROUGH_Z), food === 'corn' ? [0xf7d548, 0xf0c03a] : [C.HAY, 0xd9b24a], 8, 1, 2);
+    await walkTo(a, x, TROUGH_Z - (a.id === 'cow' || a.id === 'horse' ? 1.6 : 1.15), 2.2);
+    a.munch = true; for (let k = 0; k < 3; k++) { play('munch'); await tween(0.55, e => g.scale.setScalar(Math.max(0.05, 1 - (k + e) / 3))); }
+    a.munch = false; scene.remove(g);
+  }
+  say(YUM[a.id]); greet(a, 2);
+}
 async function sceneFeed() {
   music('hoedown', 96, true); musicLevel(MUSIC_VOL);
-  const F = cast.farmer;
-  say("Feeding time! Who's hungry?"); await wait(3.2);
-  cam.follow = () => { const x = posOf(F).x; cam.tp.set(x + 0.2, 3.4, 5.4); cam.tl.set(x - 0.4, 0.9, -3.2); }; cam.rate = 0.9;
-  for (let i = 0; i < FEED.length; i++) {
-    const [id, food] = FEED[i], a = cast[id], x = SLOT_X(i), an = byId[id];
-    if (food !== 'fly') say(`${a.name} the ${an.kind.toLowerCase()} is hungry!`);
-    await walkTo(F, x + 1.5, TROUGH_Z + 0.9, 3); F.face = faceDir(-1, -0.6); await wait(0.3);
-    if (food === 'fly') await frogSnack(a, x);
-    else {
-      F.pourT0 = time; await wait(0.55); const g = makeFood(food, x, TROUGH_Z); play(food === 'corn' ? 'flutter' : 'thud'); if (food === 'corn') burst(V(x, 1, TROUGH_Z), [0xf7d548, 0xf0c03a], 10, 1, 2);
-      await walkTo(a, x, TROUGH_Z - (id === 'cow' || id === 'horse' ? 1.6 : 1.15), 1.6);
-      a.munch = true; for (let k = 0; k < 3; k++) { play('munch'); await tween(0.75, e => g.scale.setScalar(Math.max(0.05, 1 - (k + e) / 3))); }
-      a.munch = false; scene.remove(g);
-    }
-    say(`Yum yum! ${an.say}`); greet(a, 2); await wait(1.6);
+  await talk("Feeding time! Who's hungry?");
+  const icons = new Map(FEED.map(([id, food]) => [cast[id], thought(cast[id], food)]));
+  let hungry = FEED.map(([id]) => cast[id]), first = true; const meals = [];
+  while (hungry.length) {
+    const a = await yourTurn(hungry, first ? 'Tap a hungry animal to feed it!' : pick(['Who is still hungry?', 'Feed another one!', 'Tap a hungry tummy!']));
+    first = false; hungry = hungry.filter(b => b !== a); scene.remove(icons.get(a));
+    const i = FEED.findIndex(([id]) => id === a.id); meals.push(feedOne(a, FEED[i][1], SLOT_X(i))); await wait(0.5);
   }
-  cam.follow = null; shot(-1, 5, 12, -1, 0.8, -3.5);
-  say('Everybody is full. Thank you, farmer!'); F.waving = true; play('cheer');
-  FEED.forEach(([id], i) => setTimeout(() => greet(cast[id]), 200 + i * 280)); await wait(4.5); F.waving = false; stopMusic(1.2);
+  await Promise.all(meals); await wait(0.8);
+  const F = cast.farmer; F.waving = true; play('cheer'); say('Everybody is full. Thank you!');
+  FEED.forEach(([id], i) => setTimeout(() => greet(cast[id]), 200 + i * 280)); await wait(4); F.waving = false; stopMusic(1.2);
 }
 
 function setupBath() {
@@ -897,67 +1099,75 @@ function setupBath() {
   pigs.forEach((p, i) => place(p, MUD.x - 8 - i * 1.4, MUD.z + 1 - i * 1.2, 0));
   shot(MUD.x - 0.5, 3.2, MUD.z + 8.5, MUD.x - 2.2, 0.6, MUD.z);
 }
+async function washOnce(p) {
+  const farmer = cast.farmer, F = farmer.parts.farmer, tipW = V(0, 0, 0), q = posOf(p), s = p.scale;
+  lookAt(farmer, p); farmer.hosing = true; play('splash'); p.hopT0 = time;
+  every(0.03, 1, () => { F.tip.getWorldPosition(tipW); lob(tipW, V(q.x + rnd(-0.6, 0.6) * s, rnd(0.6, 1.1) * s, q.z + rnd(-0.5, 0.5) * s), pick(WATER), 0.45); });
+  every(0.05, 1.3, () => bubble(q.x + rnd(-0.9, 0.9) * s, rnd(0.4, 1.2) * s, q.z + rnd(-0.6, 0.6) * s));
+  const m0 = p.mud; await tween(1.1, k => setMud(p, Math.max(0, m0 - 0.5 * k))); farmer.hosing = false;
+  if (p.mud < 0.05) { setMud(p, 0); p.shakeT0 = time; burst(V(q.x, 0.9 * s + 0.3, q.z), WATER, 18, 3, 4); play('splash'); await wait(0.5); greet(p, 2); }
+}
 async function sceneBath() {
   music('macdonald', 100, true, t => CALLS.pig(t, 0.6)); musicLevel(MUSIC_VOL);
-  const pigs = [cast.pig, ...cast.piglets], F = cast.farmer.parts.farmer;
-  say('Wilbur and the piglets found a big mud puddle!'); await wait(3);
+  const pigs = [cast.pig, ...cast.piglets], farmer = cast.farmer;
   const spots = [[MUD.x - 1.2, MUD.z - 0.2], [MUD.x + 1.4, MUD.z + 0.9], [MUD.x + 0.8, MUD.z - 1.3]];
-  await Promise.all(pigs.map((p, i) => walkTo(p, spots[i][0] - 3.6, spots[i][1], 3)));
-  say('Ready, set... jump!'); await wait(1);
-  for (let i = 0; i < 3; i++) { const p = pigs[i]; await leapTo(p, spots[i][0], spots[i][1], p.baby ? 0.8 : 1.1, 0.6); play('splat'); burst(V(spots[i][0], 0.3, spots[i][1]), MUDS, 14, 2, 5); tween(0.5, k => setMud(p, Math.max(p.mud, k * 0.5))); }
-  say('Splish! Splash! Muddy piggies!'); await wait(1.5);
-  say('Roll, roll, roll in the mud!');
-  for (const p of pigs) { p.rollT0 = time; play('splat'); burst(V(posOf(p).x, 0.4, posOf(p).z), MUDS, 10, 2, 4); tween(1.2, k => setMud(p, 0.5 + 0.5 * k)); await wait(0.9); }
-  await wait(1.2); pigs.forEach((p, i) => setTimeout(() => greet(p), i * 300)); await wait(2.4);
-  // the farmer comes with the hose
-  const farmer = cast.farmer; place(farmer, MUD.x + 11, MUD.z + 2, Math.PI); F.hose.visible = true;
+  say('Wilbur and the piglets found a big mud puddle!');
+  await Promise.all(pigs.map((p, i) => walkTo(p, spots[i][0] - 3.6, spots[i][1], 3))); await wait(0.5);
+  let dry = pigs.slice(), first = true; const jumps = [];
+  while (dry.length) {
+    const p = await yourTurn(dry, first ? 'Tap a piggy to jump in the mud!' : 'Tap the next piggy!');
+    first = false; dry = dry.filter(q => q !== p); const [x, z] = spots[pigs.indexOf(p)];
+    say(pick(['Splish!', 'Splash!', 'Sploosh!']));
+    jumps.push((async () => {
+      await leapTo(p, x, z, p.baby ? 0.8 : 1.1, 0.6); play('splat'); burst(V(x, 0.3, z), MUDS, 14, 2, 5); tween(0.5, k => setMud(p, Math.max(p.mud, k * 0.6)));
+      await wait(0.6); p.rollT0 = time; play('splat'); burst(V(x, 0.4, z), MUDS, 10, 2, 4); tween(1.2, k => setMud(p, 0.6 + 0.4 * k)); await wait(1); call(p);
+    })());
+    await wait(0.4);
+  }
+  await Promise.all(jumps); await talk('Muddy, muddy piggies!');
+  // the farmer comes with the hose; each tap washes a piggy a bit cleaner
+  const F = farmer.parts.farmer; place(farmer, MUD.x + 11, MUD.z + 2, Math.PI); F.hose.visible = true;
   framePair(farmer, cast.pig); say('Uh oh! Bath time, piggies!'); await walkTo(farmer, MUD.x + 4.6, MUD.z + 0.2, 2.8); farmer.face = Math.PI;
   shot(MUD.x + 0.8, 3, MUD.z + 8, MUD.x + 0.6, 0.6, MUD.z);
-  say('Scrub-a-dub-dub! Bubbles!');
-  every(0.06, 4.2, () => { const p = pick(pigs), q = posOf(p); bubble(q.x + rnd(-0.9, 0.9) * p.scale, rnd(0.4, 1.2) * p.scale, q.z + rnd(-0.6, 0.6) * p.scale); });
-  pigs.forEach(p => (p.lean = 0)); tween(4.2, k => pigs.forEach(p => setMud(p, 1 - 0.65 * k)));
-  every(0.9, 4, () => (pick(pigs).hopT0 = time)); await wait(4.6);
-  say('Rinse with the hose! Splash!'); farmer.hosing = true;
-  const tipW = V(0, 0, 0);
-  every(0.03, 3.6, () => { F.tip.getWorldPosition(tipW); const q = posOf(pick(pigs)); lob(tipW, V(q.x + rnd(-0.6, 0.6), rnd(0.6, 1.1), q.z + rnd(-0.5, 0.5)), pick(WATER), 0.45); });
-  every(0.8, 3.6, () => play('splash')); tween(3.6, k => pigs.forEach(p => setMud(p, 0.35 * (1 - k)))); await wait(3.8); farmer.hosing = false;
-  say('Shake, shake, shake!');
-  for (const p of pigs) { p.shakeT0 = time; const q = posOf(p); burst(V(q.x, 0.9 * p.scale + 0.3, q.z), WATER, 18, 3, 4); play('splash'); await wait(0.45); }
-  screenSplash(); play('splash'); await wait(1.8);
-  say('Squeaky clean piggies!'); farmer.waving = true; pigs.forEach((p, i) => setTimeout(() => greet(p, 2), i * 280)); await wait(3.6); farmer.waving = false; stopMusic(1.2);
+  let dirty = pigs.slice(); first = true;
+  while (dirty.length) {
+    const p = await yourTurn(dirty, first ? 'Tap a muddy piggy to wash it!' : pick(['Splash! Tap again!', 'Scrub-a-dub-dub!', 'More bubbles!']));
+    first = false; await washOnce(p); if (p.mud < 0.05) dirty = dirty.filter(q => q !== p);
+  }
+  screenSplash(); play('splash'); say('Squeaky clean piggies!'); farmer.waving = true; pigs.forEach((p, i) => setTimeout(() => greet(p, 2), i * 280)); await wait(3.4); farmer.waving = false; stopMusic(1.2);
 }
 
 function setupRoundUp() {
   const flock = [cast.sheep, ...cast.flock];
-  flock.forEach((s, i) => place(s, rnd(-9, -3) + i * 0.8, 15 + (i % 3) * 2.2 + rnd(-0.5, 0.5), rnd(-1, 1)));
-  place(cast.goat, 2, 21, Math.PI);
-  shot(-9, 5, 27, -11, 1, 13);
+  flock.forEach((s, i) => place(s, -8 + i * 1.6 + rnd(-0.3, 0.3), 15 + (i % 3) * 2.2 + rnd(-0.5, 0.5), rnd(-1, 1)));
+  place(cast.goat, 2, 19, Math.PI);
+  shot(-9, 7, 30, -12, 0.6, 12);
 }
 async function sceneRoundUp() {
   music('baa', 100, true); musicLevel(MUSIC_VOL);
   const flock = [cast.sheep, ...cast.flock];
-  say('Time to bring the sheep home!'); await wait(3);
-  shot(-11, 3.8, 20.5, -18.5, 1, 10.5);
-  for (let i = 0; i < flock.length; i++) {
-    const s = flock[i], z = 6.6 + i * 1.7;
-    await walkTo(s, -13.8, z, 3.4); play('sheep', 0.7);
-    const land = leapTo(s, rnd(-25.5, -21), z + rnd(-0.6, 0.6), 1.9, 1.1); await wait(0.55); count(i + 1); await land;
-    s.face = rnd(-Math.PI, Math.PI);
+  await talk('Time to bring the sheep home!');
+  let out = flock.slice(), n = 0, first = true; const runs = [];
+  const jump = async (s, z, voice) => { await walkTo(s, -13.8, z, 3.6); play(voice); const land = leapTo(s, rnd(-25.5, -21), z + rnd(-0.6, 0.6), 1.9, 1.1); await wait(0.55); count(++n); await land; s.face = rnd(-Math.PI, Math.PI); };
+  while (out.length) {
+    const s = await yourTurn(out, first ? 'Tap a sheep to send it home!' : pick(['Tap another sheep!', 'Who is next?', 'Baa! Tap a sheep!']));
+    first = false; out = out.filter(x => x !== s); runs.push(jump(s, 6.6 + flock.indexOf(s) * 1.7, 'sheep')); await wait(0.5);
   }
-  await wait(0.8); framePair(cast.goat, cast.goat, 0.9); say('Oh! Billy the goat wants to come too!'); greet(cast.goat); await wait(2.2);
-  shot(-11, 3.8, 20.5, -18.5, 1, 10.5);
-  await walkTo(cast.goat, -13.8, 13.8, 3.6); play('goat', 0.7); const land = leapTo(cast.goat, -21.5, 13, 2.2, 1.1); await wait(0.55); count(6); await land;
-  await wait(1); say('Everybody is home! Hooray!'); play('cheer');
-  [...flock, cast.goat].forEach((s, i) => setTimeout(() => greet(s), i * 260)); await wait(4.2); stopMusic(1.2);
+  await Promise.all(runs); await wait(0.6);
+  framePair(cast.goat, cast.goat, 0.9); greet(cast.goat); await talk('Oh! Billy the goat wants to come too!');
+  await yourTurn([cast.goat], 'Tap Billy!');
+  shot(-9, 7, 30, -12, 0.6, 12); greet(cast.goat); await jump(cast.goat, 13.8, 'goat');
+  await wait(0.6); say('Everybody is home! Hooray!'); play('cheer');
+  [...flock, cast.goat].forEach((s, i) => setTimeout(() => greet(s), i * 260)); await wait(4); stopMusic(1.2);
 }
 
 const PAIRS = () => [
-  { mama: cast.pig, kids: cast.piglets, lost: 'Two little piglets are lost! Where is Mama?', found: 'Wilbur found the piglets! Hooray!' },
-  { mama: cast.duck, kids: [cast.duckling], lost: 'The little duckling is lost! Where is Mama?', found: 'Puddles found the duckling! Quack quack!' },
-  { mama: cast.cow, kids: [cast.calf], lost: 'The little calf is lost! Where is Mama?', found: 'Daisy found the calf! Moo!' },
-  { mama: cast.frog, kids: [cast.froglet], lost: 'The little froglet is lost! Where is Mama?', found: 'Hoppy found the froglet! Ribbit!' },
-  { mama: cast.sheep, kids: [cast.lamb], lost: 'The little lamb is lost! Where is Mama?', found: 'Woolly found the lamb! Baa!' },
-  { mama: cast.chicken, kids: [cast.chick], lost: 'The little chick is lost! Where is Mama?', found: 'Henrietta found the chick! Peep peep!' },
+  { mama: cast.pig, kids: cast.piglets, lost: 'Two little piglets are lost!', here: 'Here I am, says Wilbur!', found: 'Wilbur found the piglets! Hooray!' },
+  { mama: cast.duck, kids: [cast.duckling], lost: 'The little duckling is lost!', here: 'Here I am, says Puddles!', found: 'Puddles found the duckling! Quack quack!' },
+  { mama: cast.cow, kids: [cast.calf], lost: 'The little calf is lost!', here: 'Here I am, says Daisy!', found: 'Daisy found the calf! Moo!' },
+  { mama: cast.frog, kids: [cast.froglet], lost: 'The little froglet is lost!', here: 'Here I am, says Hoppy!', found: 'Hoppy found the froglet! Ribbit!' },
+  { mama: cast.sheep, kids: [cast.lamb], lost: 'The little lamb is lost!', here: 'Here I am, says Woolly!', found: 'Woolly found the lamb! Baa!' },
+  { mama: cast.chicken, kids: [cast.chick], lost: 'The little chick is lost!', here: 'Here I am, says Henrietta!', found: 'Henrietta found the chick! Peep peep!' },
 ];
 function setupMama() {
   const P = world.pads;
@@ -969,56 +1179,63 @@ function setupMama() {
 }
 async function sceneMama() {
   music('mary', 92, true); musicLevel(MUSIC_VOL);
-  say('Some babies got lost on the farm!'); await wait(3);
-  for (const { mama, kids, lost, found } of PAIRS()) {
+  await talk('Some babies got lost on the farm!');
+  for (const { mama, kids, lost, here, found } of PAIRS()) {
     const kid = kids[0];
-    framePair(kid, kid, 1.2); say(lost); await wait(1.4);
-    for (const k of kids) { greet(k); await wait(0.35); } await wait(1.6);
-    framePair(mama, mama, 1.2); lookAt(mama, kid); say(`Here I am, says ${mama.name}!`); await wait(0.9); greet(mama); await wait(1.8);
-    const p = posOf(mama), offs = kids.length > 1 ? [-0.9, 0.9] : [0.9];
+    framePair(kid, kid, 1.2); await talk(lost, 0.1);
+    await yourTurn(kids, 'Tap the baby to call Mama!');
+    for (const k of kids) { greet(k); await wait(0.35); } await wait(1);
+    framePair(mama, mama, 1.2); lookAt(mama, kid); await wait(0.5); greet(mama); await talk(here, 0.1);
+    await yourTurn([mama], 'Tap Mama!');
+    greet(mama); const p = posOf(mama), offs = kids.length > 1 ? [-0.9, 0.9] : [0.9];
     cam.follow = () => { const q = posOf(kid); cam.tp.set(q.x, 3.4, q.z + 7.5); cam.tl.set(q.x, 0.6, q.z - 1); }; cam.rate = 1.4;
-    await Promise.all(kids.map((k, i) => walkTo(k, p.x + offs[i], p.z + 1.6, k.parts.hopper ? 2 : 3)));
+    await Promise.all(kids.map((k, i) => walkTo(k, p.x + offs[i], p.z + 1.6, k.parts.hopper ? 2.4 : 3.4)));
     cam.follow = null; framePair(mama, kids[0], 1);
-    kids.forEach(k => lookAt(k, mama)); lookAt(mama, kids[0]); await wait(0.6);
+    kids.forEach(k => lookAt(k, mama)); lookAt(mama, kids[0]); await wait(0.5);
     mama.lean = -0.15; kids.forEach(k => (k.lean = -0.22)); hearts(mama, 3); kids.forEach(k => hearts(k, 2)); say(found); greet(mama, 1); kids.forEach(k => setTimeout(() => greet(k), 400));
     await wait(2.6); mama.lean = 0; kids.forEach(k => (k.lean = 0));
   }
   shot(4, 8, 28, 4, 0.8, 4, 0.6); say('Everybody found their mama!'); play('cheer'); await wait(3.6); stopMusic(1.2);
 }
 
+const NIGHT = ['Night night, Buttercup!', 'Night night, Daisy and the calf!', 'Night night, Billy!', 'Night night, sheep!', 'Night night, Wilbur and the piglets!', 'Night night, Henrietta and the chick!'];
 function setupBed() {
   setSky(0.2); world.troughs.visible = false; // the farmer tidied up for the night
   place(cast.horse, -20, -3); place(cast.cow, -16, -2.4); place(cast.calf, -15, -0.6); place(cast.goat, -12, -3.2);
   place(cast.sheep, -8, -2.2); cast.flock.forEach((s, i) => place(s, -9.5 + i * 1.2, -0.4 + (i % 2) * 1.3)); place(cast.lamb, -6.5, 0.8);
   place(cast.pig, -3, -2.4); place(cast.piglets[0], -2.2, -0.8); place(cast.piglets[1], -3.6, -0.5); place(cast.chicken, 1.2, -1.6); place(cast.chick, 2, -0.4);
   place(cast.duck, POND.x - 2.6, POND.z + 0.6, 0); place(cast.duckling, POND.x - 1.4, POND.z + 1.7, 0); place(cast.frog, POND.x - 7, POND.z - 0.4, 0); place(cast.froglet, POND.x - 6.6, POND.z + 1, 0);
-  shot(-6, 6, 15, -10, 2, -5);
+  shot(-7, 6, 15, -10, 1.5, -4);
 }
 async function sceneBed() {
   music('twinkle', 66, true); musicLevel(MUSIC_VOL);
-  say('The sun is going down. Time for bed, animals!');
-  tween(9, k => { setSky(0.2 + 0.8 * k); setGlow(clamp(k * 1.6 - 0.4, 0, 1)); }); await wait(5);
+  tween(9, k => { setSky(0.2 + 0.8 * k); setGlow(clamp(k * 1.6 - 0.4, 0, 1)); });
+  await talk('The sun is going down. Time for bed, animals!', 1);
   const groups = [[cast.horse], [cast.cow, cast.calf], [cast.goat], [cast.sheep, ...cast.flock, cast.lamb], [cast.pig, ...cast.piglets], [cast.chicken, cast.chick]];
-  const names = ['Buttercup', 'Daisy and the calf', 'Billy', 'Woolly and the sheep', 'Wilbur and the piglets', 'Henrietta and the chick'];
-  for (let g = 0; g < groups.length; g++) {
-    say(`Night night, ${names[g]}!`); call(groups[g][0], 0.5);
-    const go = async (m, j) => { await wait(j * 0.4); m.intoBarn = true; await walkTo(m, DOOR.x + rnd(-1.6, 1.6), DOOR.z + 1.2, 2.3); return walkTo(m, posOf(m).x, BARN.z, 2.3); };
-    const lead = go(groups[g][0], 0); groups[g].slice(1).forEach((m, j) => go(m, j + 1));
-    await wait(3.4); await lead.catch(() => {});
+  const go = async (m, j) => { await wait(j * 0.4); m.intoBarn = true; await walkTo(m, DOOR.x + rnd(-1.6, 1.6), DOOR.z + 1.2, 2.3); return walkTo(m, posOf(m).x, BARN.z, 2.3); };
+  let left = groups.slice(), first = true; const walks = [];
+  while (left.length) {
+    const a = await yourTurn(left.flat(), first ? 'Tap an animal to tuck it into bed!' : pick(['Who else is sleepy?', 'Tap the next sleepy animal!', 'Who goes to bed next?']));
+    first = false; const g = left.find(G => G.includes(a)); left = left.filter(G => G !== g);
+    say(NIGHT[groups.indexOf(g)]); call(g[0], 0.5); g.forEach((m, j) => walks.push(go(m, j))); await wait(1.4);
   }
+  await Promise.all(walks);
   // the pond animals sleep outside
   shot(POND.x - 3, 3.6, POND.z + 10, POND.x - 1, 0.4, POND.z, 0.6);
-  say('Puddles and the duckling float on the pond.'); walkTo(cast.duck, POND.x + 0.6, POND.z - 0.2, 0.8); walkTo(cast.duckling, POND.x + 1.4, POND.z + 0.7, 0.8); await wait(3.6);
-  say('Hoppy and the froglet hop onto a lily pad. Ribbit!'); const pad = world.pads[1];
+  await talk('The ducks and frogs sleep by the pond.');
+  await yourTurn([cast.duck, cast.duckling], 'Tap the ducks!');
+  say('Float, float on the pond. Quack!'); walkTo(cast.duck, POND.x + 0.6, POND.z - 0.2, 0.8); await walkTo(cast.duckling, POND.x + 1.4, POND.z + 0.7, 0.8); call(cast.duck, 0.5); await wait(0.8);
+  await yourTurn([cast.frog, cast.froglet], 'Tap the frogs!');
+  say('Hop onto a lily pad! Ribbit!'); const pad = world.pads[1];
   walkTo(cast.frog, pad.x - 0.25, pad.z, 1.6); await walkTo(cast.froglet, pad.x + 0.35, pad.z + 0.25, 1.6); call(cast.frog, 0.5); await wait(1.2);
-  const Z = canvasTex(128, 128, c => { c.font = '900 84px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 10; c.strokeStyle = '#1d2552'; c.strokeText('z', 64, 70); c.fillStyle = '#fff'; c.fillText('z', 64, 70); });
-  const zzz = (x, y, z, s = 0.8) => floatUp(Z, V(x + rnd(-0.3, 0.3), y, z), s, s, 2.4, 0.7);
-  every(1.1, 60, () => { for (const a of [cast.duck, cast.frog]) { const p = posOf(a); zzz(p.x, 1.3, p.z, 0.6); } });
-  await wait(3.5);
+  every(1.1, 600, () => { for (const a of [cast.duck, cast.frog]) { const p = posOf(a); zzz(p.x, 1.3, p.z, 0.6); } });
+  shot(-2, 9, 26, -12, 3, -10, 0.5); await wait(2.5);
+  await yourTurn([{ spot: true, p: V(BARN.x, 3.4, BARN.z + 6), size: 3.4 }], 'Tap the barn to turn off the light!');
+  play('blip'); await tween(1.2, k => setGlow(1 - k));
+  every(0.9, 600, () => zzz(BARN.x + 0.5, 8.5, BARN.z + 6, 1.4));
   shot(6, 12, 40, -8, 3, -10, 0.3);
-  every(0.9, 60, () => zzz(BARN.x + 0.5, 8.5, BARN.z + 6, 1.4));
-  say('Good night, farm!'); await wait(6);
-  say('Good night, Violet!'); await wait(6); stopMusic(4); await wait(2);
+  await talk('Good night, farm!', 2.5);
+  await talk('Good night, Violet!', 5); stopMusic(4); await wait(2);
 }
 
 const SCENES = [
@@ -1036,21 +1253,28 @@ async function playFrom(i, whole) {
     const sc = SCENES[k];
     fadeOv.classList.add('on'); await wait(0.7);
     resetStage(); sc.setup(); cut(); bannerTxt.textContent = `${sc.emoji} ${sc.title}`; bannerOv.hidden = false; fadeOv.classList.remove('on'); say(sc.title);
-    await wait(2.6); bannerOv.hidden = true;
+    await wait(2.4); bannerOv.hidden = true;
     await sc.run();
   }
   if (g !== gen) return;
   if (whole) { startBtn.textContent = '▶ Play the day again'; startOv.hidden = false; }
-  else say('The end! Tap an animal, or pick another show.');
+  else say('The end! Tap an animal, or pick another game.');
 }
 
-/* ---- taps: any animal you touch says hello ---- */
-const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), groundPlane = new THREE.Plane(V(0, 1, 0), 0);
+/* ---- taps: on her turn, a tap near a glowing animal moves the story; any other animal just says hello ---- */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), groundPlane = new THREE.Plane(V(0, 1, 0), 0), scr = V(0, 0, 0);
+function onScreen(t) { scr.copy(spotPos(t)); if (!t.spot) scr.y += 0.8 * ringSize(t); scr.project(camera); return scr.z < 1 ? [(scr.x + 1) / 2 * W, (1 - scr.y) / 2 * H] : null; }
 function onTap(e) {
-  audio(); const r = renderer.domElement.getBoundingClientRect();
-  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, camera);
+  audio(); const r = renderer.domElement.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  ndc.set((x / r.width) * 2 - 1, -(y / r.height) * 2 + 1); ray.setFromCamera(ndc, camera);
   const shown = actors.filter(a => a.root.visible), hit = ray.intersectObjects(shown.map(a => a.root), true)[0];
   let a = hit && hit.object.userData.actor;
+  if (turn) {
+    // generous: the tapped animal if it's one of hers, otherwise the closest glowing one within a big finger's reach
+    let best = a && turn.targets.includes(a) ? a : null, bd = Math.max(110, r.width * 0.14);
+    if (!best) for (const t of turn.targets) { if (!t.spot && !t.root.visible) continue; const s = onScreen(t); if (!s) continue; const d = Math.hypot(s[0] - x * W / r.width, s[1] - y * H / r.height); if (d < bd) { bd = d; best = t; } }
+    if (best) { endTurn(best); return; }
+  }
   const p = ray.ray.intersectPlane(groundPlane, V(0, 0, 0));
   if (!a && p) { let best = 2.6; for (const b of shown) { const d = Math.hypot(posOf(b).x - p.x, posOf(b).z - p.z); if (d < best) { best = d; a = b; } } }
   if (a) { if (time - a.lastTap > 0.5) { a.lastTap = time; greet(a, 2); } }
@@ -1061,19 +1285,15 @@ function onTap(e) {
 function renderChips() {
   const nav = $('scenes'), mk = (i, em, label) => `<button type="button" class="chip" data-i="${i}" disabled><span class="em">${em}</span>${label}</button>`;
   nav.innerHTML = mk(-1, '☀️', 'The whole day') + SCENES.slice(1).map((s, j) => mk(j + 1, s.emoji, s.title)).join('');
-  nav.addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b || b.disabled) return; unlockSpeech(); const i = +b.dataset.i; playFrom(i < 0 ? 0 : i, i < 0); });
+  nav.addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b || b.disabled) return; const i = +b.dataset.i; playFrom(i < 0 ? 0 : i, i < 0); });
 }
-// iPad and iPhone only let a page talk after a tap, so speak a blank word on the first one.
-let spoke = false;
-function unlockSpeech() { if (spoke || !canSpeak) return; spoke = true; try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} }
 function setBtn(id, on, onTxt, offTxt) { const b = $(id); b.textContent = on ? onTxt : offTxt; b.setAttribute('aria-pressed', on); b.classList.toggle('armed', !on); }
 $('soundBtn').addEventListener('click', () => { S.sound = !S.sound; save(); setBtn('soundBtn', S.sound, 'Sound on', 'Sound off'); if (!S.sound) hush(); if (audio()) master.gain.setTargetAtTime(S.sound ? 0.8 : 0, now(), 0.05); });
 $('voiceBtn').addEventListener('click', () => { S.voice = !S.voice; save(); setBtn('voiceBtn', S.voice, 'Voice on', 'Voice off'); if (!S.voice) hush(); });
 $('fullBtn').addEventListener('click', () => { const el = document.documentElement; if (document.fullscreenElement || document.webkitFullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen).call(document); else (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el); });
 ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => { $('fullBtn').textContent = document.fullscreenElement || document.webkitFullscreenElement ? 'Exit full screen' : 'Full screen'; W = 0; }));
-startBtn.addEventListener('click', () => { unlockSpeech(); playFrom(0, true); });
+startBtn.addEventListener('click', () => playFrom(0, true));
 setBtn('soundBtn', S.sound, 'Sound on', 'Sound off'); setBtn('voiceBtn', S.voice, 'Voice on', 'Voice off');
-if (!canSpeak) $('voiceBtn').hidden = true;
 
 /* ---- boot ---- */
 function layout() {
@@ -1082,7 +1302,7 @@ function layout() {
 }
 function update(dt) {
   real += dt; time += dt;
-  stepWaits(); stepTickers(dt);
+  stepWaits(); stepTickers(dt); stepTurn();
   for (const a of actors) stepActor(a, dt);
   stepBits(dt); stepPuffs(dt); stepBubbles(dt); stepFloats(dt);
   if (world.blades) world.blades.rotation.z += dt * 0.9;
@@ -1090,7 +1310,8 @@ function update(dt) {
   stepCamera(dt);
 }
 let last = performance.now();
-function frame(t) { requestAnimationFrame(frame); const dt = Math.min(0.05, (t - last) / 1000); last = t; if (!W) layout(); update(dt); renderer.render(scene, camera); }
+const SPEED = +new URLSearchParams(location.search).get('speed') || 1; // ?speed=4 for quick checks
+function frame(t) { requestAnimationFrame(frame); const dt = Math.min(0.05, (t - last) / 1000) * SPEED; last = t; if (!W) layout(); update(dt); renderer.render(scene, camera); }
 function boot() {
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }); renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
@@ -1109,6 +1330,8 @@ function boot() {
   loadModels().then(go); setTimeout(go, 12000);
 }
 boot();
+// for automated checks: where to tap next, and how many recordings are ready
+window.__farm = { next: () => { if (!turn) return null; const t = turn.targets.find(t => t.spot || t.root.visible), s = t && onScreen(t), r = renderer.domElement.getBoundingClientRect(); return s && [r.left + s[0], r.top + s[1]]; }, sounds: () => Object.fromEntries(Object.entries(samples).map(([k, v]) => [k, v.length])), lines: () => Object.keys(voBufs).length };
 </script>
 </body>
 </html>
